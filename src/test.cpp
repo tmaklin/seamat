@@ -12,5 +12,5 @@
 int main() {
   seamat::DenseMatrix<double> dense;
   seamat::IndexMatrix<double, uint16_t> index;
-  seamat::SparseMatrix<double, uint16_t> sparse;
+  seamat::SparseMatrix<double> sparse;
 }

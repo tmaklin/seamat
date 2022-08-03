@@ -160,20 +160,33 @@ public:
     void swap_vals(std::vector<T> &_vals) { this->vals.swap(_vals); };
 };
 
-template <typename T, typename U> class SparseMatrix : public Matrix<T> {
+template <typename T> class SparseMatrix : public Matrix<T> {
 private:
     // Sparse matrix implemented in the compressed column storage (CCS)
     // format; for reference see but replace row with column
     // https://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
     //
     std::vector<T> vals;
-    std::vector<U> row_ind;
-    std::vector<U> col_ptr;
+    std::vector<uint32_t> row_ind;
+    std::vector<uint32_t> col_ptr;
     T zero_val;
+
+    T* get_address(uint32_t row, uint32_t col);
+    const T* get_address(uint32_t row, uint32_t col) const;
 
 public:
     SparseMatrix() = default;
     ~SparseMatrix() = default;
+    // Parameter constructor
+    SparseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial);
+    // Initialize from a DenseMatrix
+    SparseMatrix(DenseMatrix<T> _vals, const T& _zero_val);
+    // Initialize from a 2D vector
+    SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val);
+    // Copy constructor
+    SparseMatrix(const SparseMatrix<T>& rhs);
+    // Copy constructor from contiguous 2D vector
+    SparseMatrix(const std::vector<T> &rhs, const uint32_t _rows, const uint32_t _cols, const T& _zero_val);
 
     // Resize a matrix
     void resize(const uint32_t new_rows, const uint32_t new_cols, const T initial) override;
