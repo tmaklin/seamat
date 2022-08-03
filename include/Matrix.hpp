@@ -112,8 +112,6 @@ public:
     ~DenseMatrix() = default;
     // Parameter constructor
     DenseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial);
-    // Copy constructor
-    DenseMatrix(const DenseMatrix<T>& rhs);
     // Copy constructor from contiguous 2D vector
     DenseMatrix(const std::vector<T> &rhs, const uint32_t _rows, const uint32_t _cols);
     // Copy constructor from 2D vector
@@ -143,8 +141,8 @@ public:
 
     // Parameter constructor
     IndexMatrix(const uint32_t _rows, const uint32_t _cols, const uint32_t _n_rows_vals, const uint32_t _n_cols_vals, const T& _vals_initial, const U& _indices_initial) {
-	this->rows = _rows;
-	this->cols = _cols;
+	this->resize_rows(_rows);
+	this->resize_cols(_cols);
 	this->n_rows_vals = _n_rows_vals;
 	this->n_cols_vals = _n_cols_vals;
 	this->vals = this->vals.reset(DenseMatrix<T>(_rows, _cols, _vals_initial));
@@ -181,6 +179,19 @@ private:
     T* get_address(uint32_t row, uint32_t col);
     const T* get_address(uint32_t row, uint32_t col) const;
 
+    bool nearly_equal(double a, double b)
+    {
+	return std::nextafter(a, std::numeric_limits<double>::lowest()) <= b
+      && std::nextafter(a, std::numeric_limits<double>::max()) >= b;
+    }
+
+    bool nearly_equal(double a, double b, int factor /* a factor of epsilon */)
+    {
+	double min_a = a - (a - std::nextafter(a, std::numeric_limits<double>::lowest())) * factor;
+	double max_a = a + (std::nextafter(a, std::numeric_limits<double>::max()) - a) * factor;
+
+	return min_a <= b && max_a >= b;
+    }
 public:
     SparseMatrix() = default;
     ~SparseMatrix() = default;
@@ -190,8 +201,6 @@ public:
     SparseMatrix(const Matrix<T> &_vals, const T& _zero_val);
     // Initialize from a 2D vector
     SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val);
-    // Copy constructor
-    SparseMatrix(const SparseMatrix<T>& rhs);
     // Copy constructor from contiguous 2D vector
     SparseMatrix(const std::vector<T> &rhs, const uint32_t _rows, const uint32_t _cols, const T& _zero_val);
 

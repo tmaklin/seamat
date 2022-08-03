@@ -20,34 +20,27 @@ namespace seamat {
 template<typename T>
 DenseMatrix<T>::DenseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial) {
     mat.resize(_rows*_cols, _initial);
-    this->rows = _rows;
-    this->cols = _cols;
-}
-// Copy constructor
-template <typename T>
-DenseMatrix<T>::DenseMatrix(const DenseMatrix<T>& rhs) {
-    this->mat = rhs.mat;
-    this->rows = rhs.get_rows();
-    this->cols = rhs.get_cols();
+    this->resize_rows(_rows);
+    this->resize_cols(_cols);
 }
 
 // Copy constructor from contiguous 2D vector
 template <typename T>
 DenseMatrix<T>::DenseMatrix(const std::vector<T> &rhs, const uint32_t _rows, const uint32_t _cols) {
     mat = rhs;
-    this->rows = _rows;
-    this->cols = _cols;
+    this->resize_rows(_rows);
+    this->resize_cols(_cols);
 }
 
 // Copy constructor from 2D vector
 template<typename T>
 DenseMatrix<T>::DenseMatrix(const std::vector<std::vector<T>> &rhs) {
-    this->rows = rhs.size();
-    this->cols = rhs.at(0).size();
-    mat.resize(this->rows*this->cols);
+    this->resize_rows(rhs.size());
+    this->resize_cols(rhs.at(0).size());
+    mat.resize(this->get_rows()*this->get_cols());
 #pragma omp parallel for schedule(static)
-    for (uint32_t i = 0; i < this->rows; ++i) {
-	for (uint32_t j = 0; j < this->cols; ++j) {
+    for (uint32_t i = 0; i < this->get_rows(); ++i) {
+	for (uint32_t j = 0; j < this->get_cols(); ++j) {
 	    this->operator()(i, j) = rhs[i][j];
 	}
     }

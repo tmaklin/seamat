@@ -57,8 +57,8 @@ SparseMatrix<T>::SparseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial)
     // Initializes a dense SparseMatrix; use
     // SparseMatrix<T>::remove_nonzeros to sparsify the matrix after
     // filling it.
-    this->rows = _rows;
-    this->cols = _cols;
+    this->resize_rows(_rows);
+    this->resize_cols(_cols);
 
     uint64_t n_elements = _rows*_cols;
     this->vals.resize(n_elements, _initial);
@@ -76,21 +76,20 @@ SparseMatrix<T>::SparseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial)
 template<typename T>
 SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
     this->zero_val = _zero_val;
-    this->rows = _vals.get_rows();
-    this->cols = _vals.get_cols();
+    this->resize_rows(_vals.get_rows());
+    this->resize_cols(_vals.get_cols());
 
-    this->row_ind.resize(this->rows + 1, 0);
-    this->col_ptr.resize(this->rows*this->cols, 0);
-    this->vals.resize(this->rows*this->cols, 0);
+    this->row_ind.resize(this->get_rows() + 1, 0);
+    this->col_ptr.resize(this->get_rows()*this->get_cols(), 0);
+    this->vals.resize(this->get_rows()*this->get_cols(), 0);
 
-    this->nnz = 0;
-    for (uint32_t i = 0; i < this->rows; ++i) {
+    for (uint32_t i = 0; i < this->get_rows(); ++i) {
 	this->row_ind[i + 1] = this->row_ind[i];
-	for (uint32_t j = 0; j < this->cols; ++j) {
+	for (uint32_t j = 0; j < this->get_cols(); ++j) {
 	    if (_vals(i, j) != this->zero_val) { // todo: use std::nextafter for floating point comparisons
 		++this->row_ind[i + 1];
-		this->col_ptr[i*this->cols + j] = j;
-		this->vals[i*this->cols + j] = _vals(i, j);
+		this->col_ptr[i*this->get_cols() + j] = j;
+		this->vals[i*this->get_cols() + j] = _vals(i, j);
 	    }
 	}
     }
@@ -99,26 +98,26 @@ SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
 // Initialize from a 2D vector
 template<typename T>
 SparseMatrix<T>::SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val) {
-    this->rows = rhs.size();
-    this->cols = rhs.at(0).size();
+    this->resize_rows(rhs.size());
+    this->resize_cols(rhs.at(0).size());
 
     uint64_t n_nonzero_elem = 0;
-    for (uint32_t i = 0; i < this->rows; ++i) {
-	for (uint32_t j = 0; j < this->cols; ++j) {
-	    if (rhs[i][j] != this->_zero_val) { // todo: floating point comparisons
+    for (uint32_t i = 0; i < this->get_rows(); ++i) {
+	for (uint32_t j = 0; j < this->get_cols(); ++j) {
+	    if (rhs[i][j] != this->zero_val) { // todo: floating point comparisons
 		++n_nonzero_elem;
 	    }
 	}
     }
 
-    this->row_ind.resize(this->rows + 1, 0);
+    this->row_ind.resize(this->get_rows() + 1, 0);
     this->col_ptr.resize(n_nonzero_elem, 0);
-    this->vals.resize(n_nonzero_elem, 0);
+    this->vals.resize(n_nonzero_elem, _zero_val);
 
     uint32_t index = 0;
-    for (uint32_t i = 0; i < this->rows; ++i) {
+    for (uint32_t i = 0; i < this->get_rows(); ++i) {
 	this->row_ind[i + 1] = this->row_ind[i];
-	for (uint32_t j = 0; j < this->cols; ++j) {
+	for (uint32_t j = 0; j < this->get_cols(); ++j) {
 	    if (rhs[i][j] != this->zero_val) { // todo: use std::nextafter for floating point comparisons
 		++this->row_ind[i + 1];
 		this->col_ptr[index] = j;
@@ -129,22 +128,39 @@ SparseMatrix<T>::SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _
     }
 }
 
-// Copy constructor
-template <typename T>
-SparseMatrix<T>::SparseMatrix(const SparseMatrix<T>& rhs) {
-    this->vals = rhs.vals;
-    this->row_ind = rhs.row_ind;
-    this->col_ptr = rhs.col_ptr;
-    this->zero_val = rhs.zero_val;
-    this->rows = rhs.get_rows();
-    this->cols = rhs.get_cols();
-}
-
 // Copy constructor from contiguous 2D vector
 template <typename T>
 SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const uint32_t _rows, const uint32_t _cols, const T& _zero_val) {
-    DenseMatrix<T> dense(rhs, _rows, _cols);
-    SparseMatrix(dense, _zero_val);
+    this->resize_rows(_rows);
+    this->resize_cols(_cols);
+    this->zero_val = _zero_val;
+
+    uint64_t n_nonzero_elem = 0;
+    for (uint32_t i = 0; i < _rows; ++i) {
+	for (uint32_t j = 0; j < _cols; ++j) {
+	    if (!this->nearly_equal(rhs[i*_cols + j], this->zero_val)) {
+		++n_nonzero_elem;
+	    }
+	}
+    }
+
+    this->row_ind.resize(_rows + 1, 0);
+    this->col_ptr.resize(n_nonzero_elem, 0);
+    this->vals.resize(n_nonzero_elem, _zero_val);
+
+    uint32_t index = 0;
+    for (uint32_t i = 0; i < this->get_rows(); ++i) {
+	this->row_ind[i + 1] = this->row_ind[i];
+	for (uint32_t j = 0; j < this->get_cols(); ++j) {
+	    const T &rhs_val = rhs[i*_cols + j];
+	    if (!this->nearly_equal(rhs_val, this->zero_val)) {
+		++this->row_ind[i + 1];
+		this->col_ptr[index] = j;
+		this->vals[index] = rhs_val;
+		++index;
+	    }
+	}
+    }
 }
 
 // Resize a matrix
