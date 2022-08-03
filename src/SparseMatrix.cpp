@@ -74,7 +74,7 @@ SparseMatrix<T>::SparseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial)
     
 // Initialize from a DenseMatrix
 template<typename T>
-SparseMatrix<T>::SparseMatrix(DenseMatrix<T> _vals, const T& _zero_val) {
+SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
     this->zero_val = _zero_val;
     this->rows = _vals.get_rows();
     this->cols = _vals.get_cols();

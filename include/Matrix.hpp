@@ -28,6 +28,9 @@
 // at the very end of this file.
 
 namespace seamat {
+// Forward declare SparseMatrix
+template <typename T> class SparseMatrix;
+
 template <typename T> class Matrix {
 private:
     uint32_t rows;
@@ -81,6 +84,9 @@ public:
     // Matrix-vector right multiplication, store result in arg
     void right_multiply(const std::vector<long unsigned>& rhs, std::vector<T>& result) const;
     void exp_right_multiply(const std::vector<T>& rhs, std::vector<T>& result) const;
+
+    // Turn an arbitrary matrix into a column sparse matrix
+    SparseMatrix<T> sparsify(const T &zero_val) const { return SparseMatrix<T>(this, zero_val); }
 
     // LogSumExp a Matrix column
     T log_sum_exp_col(uint32_t col_id) const;
@@ -181,7 +187,7 @@ public:
     // Parameter constructor
     SparseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial);
     // Initialize from a DenseMatrix
-    SparseMatrix(DenseMatrix<T> _vals, const T& _zero_val);
+    SparseMatrix(const Matrix<T> &_vals, const T& _zero_val);
     // Initialize from a 2D vector
     SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val);
     // Copy constructor
