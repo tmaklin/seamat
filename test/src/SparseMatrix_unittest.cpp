@@ -29,7 +29,6 @@ TEST_F(SparseMatrixTest, CopyConstructorFromVectorWorks) {
     EXPECT_EQ(this->n_cols, got.get_cols());
     for (uint32_t i = 0; i < got.get_rows(); ++i) {
 	for (uint32_t j = 0; j < got.get_cols(); ++j) {
-	    std::cerr << "(" << i << "," << j << "): " << expected_mat[i*this->n_cols + j] << '\t' << got(i, j) << std::endl;
 	    EXPECT_EQ(this->expected_mat[i*this->n_cols + j], got(i, j));
 	}
     }
@@ -66,19 +65,7 @@ TEST_F(SparseMatrixTest, AssignmentOperatorWorks) {
     }    
 }
 
-TEST_F(SparseMatrixTest, ResizeWorks) {
+TEST_F(SparseMatrixTest, ResizeThrowsRuntimeError) {
     seamat::SparseMatrix<double> got(2, 5, 0.0);
-    got.resize(this->n_rows, this->n_cols, this->initial_val);
-    EXPECT_EQ(this->n_rows, got.get_rows());
-    EXPECT_EQ(this->n_cols, got.get_cols());
-    for (uint32_t i = 0; i < 1; ++i) {
-	for (uint32_t j = 0; j < 4; ++j) {
-	    EXPECT_EQ(0.0, got(i, j));
-	}
-    }    
-    for (uint32_t i = 1; i < this->n_rows; ++i) {
-	for (uint32_t j = 4; j < this->n_cols; ++j) {
-	    EXPECT_EQ(2.7, got(i, j));
-	}
-    }    
+    EXPECT_THROW(got.resize(this->n_rows, this->n_cols, this->initial_val), std::runtime_error);
 }

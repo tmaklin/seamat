@@ -20,13 +20,13 @@ namespace seamat {
 template<typename T>
 T* SparseMatrix<T>::get_address(uint32_t row, uint32_t col) {
     // Returns the position of element (i, j) in this->vals
-    uint32_t col_start = this->col_ptr[col];
-    uint32_t col_end = this->col_ptr[col + 1];
-    uint32_t nnz_col = col_end - col_start; // Number of non-zero elements in row `row`.
-    if (nnz_col > 0) {
-	for (uint32_t i = 0; i < nnz_col; ++i) {
-	    uint32_t index = col_start + i;
-	    if (this->col_ptr[index] == row) {
+    uint32_t row_start = this->row_ptr[row];
+    uint32_t row_end = this->row_ptr[row + 1];
+    uint32_t nnz_row = row_end - row_start; // Number of non-zero elements in row `row`.
+    if (nnz_row > 0) {
+	for (uint32_t i = 0; i < nnz_row; ++i) {
+	    uint32_t index = row_start + i;
+	    if (this->col_ind[index] == col) {
 		return &this->vals[index];
 	    }
 	}
@@ -37,13 +37,13 @@ T* SparseMatrix<T>::get_address(uint32_t row, uint32_t col) {
 template<typename T>
 const T* SparseMatrix<T>::get_address(uint32_t row, uint32_t col) const {
     // Returns the position of element (i, j) in this->vals
-    uint32_t col_start = this->col_ptr[col];
-    uint32_t col_end = this->col_ptr[col + 1];
-    uint32_t nnz_col = col_end - col_start; // Number of non-zero elements in row `row`.
-    if (nnz_col > 0) {
-	for (uint32_t i = 0; i < nnz_col; ++i) {
-	    uint32_t index = col_start + i;
-	    if (this->col_ptr[index] == row) {
+    uint32_t row_start = this->row_ptr[row];
+    uint32_t row_end = this->row_ptr[row + 1];
+    uint32_t nnz_row = row_end - row_start; // Number of non-zero elements in row `row`.
+    if (nnz_row > 0) {
+	for (uint32_t i = 0; i < nnz_row; ++i) {
+	    uint32_t index = row_start + i;
+	    if (this->col_ind[index] == col) {
 		return &this->vals[index];
 	    }
 	}
@@ -62,12 +62,12 @@ SparseMatrix<T>::SparseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial)
 
     uint64_t n_elements = _rows*_cols;
     this->vals.resize(n_elements, _initial);
-    this->col_ptr.resize(n_elements, 0);
-    this->row_ind.resize(_rows, 0);
+    this->col_ind.resize(n_elements, 0);
+    this->row_ptr.resize(_rows, 0);
     for (uint32_t i = 0; i < _rows; ++i) {
-	this->row_ind[i + 1] = this->row_ind[i] + _cols;
+	this->row_ptr[i + 1] = this->row_ptr[i] + _cols;
 	for (uint32_t j = 0; j < _cols; ++j) {
-	    this->col_ptr[i + j] = j;
+	    this->col_ind[i + j] = j;
 	}
     }
 }
@@ -79,16 +79,16 @@ SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
     this->resize_rows(_vals.get_rows());
     this->resize_cols(_vals.get_cols());
 
-    this->row_ind.resize(this->get_rows() + 1, 0);
-    this->col_ptr.resize(this->get_rows()*this->get_cols(), 0);
+    this->row_ptr.resize(this->get_rows() + 1, 0);
+    this->col_ind.resize(this->get_rows()*this->get_cols(), 0);
     this->vals.resize(this->get_rows()*this->get_cols(), 0);
 
     for (uint32_t i = 0; i < this->get_rows(); ++i) {
-	this->row_ind[i + 1] = this->row_ind[i];
+	this->row_ptr[i + 1] = this->row_ptr[i];
 	for (uint32_t j = 0; j < this->get_cols(); ++j) {
 	    if (_vals(i, j) != this->zero_val) { // todo: use std::nextafter for floating point comparisons
-		++this->row_ind[i + 1];
-		this->col_ptr[i*this->get_cols() + j] = j;
+		++this->row_ptr[i + 1];
+		this->col_ind[i*this->get_cols() + j] = j;
 		this->vals[i*this->get_cols() + j] = _vals(i, j);
 	    }
 	}
@@ -110,17 +110,17 @@ SparseMatrix<T>::SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _
 	}
     }
 
-    this->row_ind.resize(this->get_rows() + 1, 0);
-    this->col_ptr.resize(n_nonzero_elem, 0);
+    this->row_ptr.resize(this->get_rows() + 1, 0);
+    this->col_ind.resize(n_nonzero_elem, 0);
     this->vals.resize(n_nonzero_elem, _zero_val);
 
     uint32_t index = 0;
     for (uint32_t i = 0; i < this->get_rows(); ++i) {
-	this->row_ind[i + 1] = this->row_ind[i];
+	this->row_ptr[i + 1] = this->row_ptr[i];
 	for (uint32_t j = 0; j < this->get_cols(); ++j) {
 	    if (rhs[i][j] != this->zero_val) { // todo: use std::nextafter for floating point comparisons
-		++this->row_ind[i + 1];
-		this->col_ptr[index] = j;
+		++this->row_ptr[i + 1];
+		this->col_ind[index] = j;
 		this->vals[index] = rhs[i][j];
 		++index;
 	    }
@@ -144,18 +144,18 @@ SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const uint32_t _rows, c
 	}
     }
 
-    this->row_ind.resize(_rows + 1, 0);
-    this->col_ptr.resize(n_nonzero_elem, 0);
+    this->row_ptr.resize(_rows + 1, 0);
+    this->col_ind.resize(n_nonzero_elem, 0);
     this->vals.resize(n_nonzero_elem, _zero_val);
 
     uint32_t index = 0;
     for (uint32_t i = 0; i < this->get_rows(); ++i) {
-	this->row_ind[i + 1] = this->row_ind[i];
+	this->row_ptr[i + 1] = this->row_ptr[i];
 	for (uint32_t j = 0; j < this->get_cols(); ++j) {
 	    const T &rhs_val = rhs[i*_cols + j];
 	    if (!this->nearly_equal(rhs_val, this->zero_val)) {
-		++this->row_ind[i + 1];
-		this->col_ptr[index] = j;
+		++this->row_ptr[i + 1];
+		this->col_ind[index] = j;
 		this->vals[index] = rhs_val;
 		++index;
 	    }

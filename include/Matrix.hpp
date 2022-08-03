@@ -167,13 +167,13 @@ public:
 
 template <typename T> class SparseMatrix : public Matrix<T> {
 private:
-    // Sparse matrix implemented in the compressed column storage (CCS)
-    // format; for reference see but replace row with column
+    // Sparse matrix implemented in the compressed row storage (CRS) format.
+    // See link below for reference.
     // https://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
     //
     std::vector<T> vals;
-    std::vector<uint32_t> row_ind;
-    std::vector<uint32_t> col_ptr;
+    std::vector<uint32_t> row_ptr;
+    std::vector<uint32_t> col_ind;
     T zero_val;
 
     T* get_address(uint32_t row, uint32_t col);
