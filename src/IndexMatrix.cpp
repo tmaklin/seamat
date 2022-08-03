@@ -20,7 +20,7 @@ namespace seamat {
 template<typename T, typename U>
 void IndexMatrix<T,U>::resize(const uint32_t new_rows, const uint32_t new_cols, const T initial) {
     if (new_rows != this->get_rows() || new_cols != this->get_cols()) {
-	indices.resize(new_rows*new_cols, initial);
+	indices->resize(new_rows, new_cols, initial);
 	this->resize_rows(new_rows);
 	this->resize_cols(new_cols);
     }
@@ -29,7 +29,7 @@ void IndexMatrix<T,U>::resize(const uint32_t new_rows, const uint32_t new_cols, 
 // Access individual elements
 template <typename T, typename U>
 T& IndexMatrix<T,U>::operator()(uint32_t row, uint32_t col) {
-    uint32_t out_row = this->indices[row*this->get_cols() + col];
+    uint32_t out_row = (*this->indices)(row, col);
     uint32_t out_pos = out_row*this->n_cols_vals + col;
     return this->vals[out_pos];
 }
@@ -37,7 +37,7 @@ T& IndexMatrix<T,U>::operator()(uint32_t row, uint32_t col) {
 // Access individual elements (const)
 template <typename T, typename U>
 const T& IndexMatrix<T,U>::operator()(uint32_t row, uint32_t col) const {
-    uint32_t out_row = this->indices[row*this->get_cols() + col];
+    uint32_t out_row = (*this->indices)(row, col);
     uint32_t out_pos = out_row*this->n_cols_vals + col;
     return this->vals[out_pos];
 }

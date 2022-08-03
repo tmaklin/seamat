@@ -14,6 +14,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 
 // Basic matrix structure and operations
 // Implementation was done following the instructions at
@@ -47,10 +48,6 @@ public:
     // Access individual elements
     virtual T& operator()(uint32_t row, uint32_t col) =0;
     virtual const T& operator()(uint32_t row, uint32_t col) const =0;
-
-    // Get position of first element in this->mat
-    virtual T& front() =0;
-    virtual const T& front() const =0;
 
     //////
     // Implemented in Matrix.cpp - these functions only use the
@@ -125,18 +122,14 @@ public:
     // Access individual elements
     T& operator()(uint32_t row, uint32_t col) override;
     const T& operator()(uint32_t row, uint32_t col) const override;
-
-    // Get position of first element in this->mat
-    const T& front() const override { return this->mat.front(); }
-    T& front() override { return this->mat.front(); }
 };
 
 template <typename T, typename U> class IndexMatrix : public Matrix<T> {
 private:
     std::vector<T> vals;
-    U n_rows_vals;
-    U n_cols_vals;
-    std::vector<U> indices;
+    uint32_t n_rows_vals;
+    uint32_t n_cols_vals;
+    std::unique_ptr<Matrix<U>> indices;
 
 public:
     IndexMatrix() = default;
@@ -148,16 +141,6 @@ public:
     // Access individual elements
     T& operator()(uint32_t row, uint32_t col) override;
     const T& operator()(uint32_t row, uint32_t col) const override;
-
-    // Get position of first element in the values
-    const T& front() const override { return this->vals.front(); }
-    T& front() override { return this->vals.front(); }
-
-    // Set the indices from some input
-    void swap_indices(std::vector<T> &_indices) { this->indices.swap(_indices); };
-
-    // Set the values from some input
-    void swap_vals(std::vector<T> &_vals) { this->vals.swap(_vals); };
 };
 
 template <typename T> class SparseMatrix : public Matrix<T> {
@@ -194,16 +177,6 @@ public:
     // Access individual elements
     T& operator()(uint32_t row, uint32_t col) override;
     const T& operator()(uint32_t row, uint32_t col) const override;
-
-    // Get position of first element in the values
-    const T& front() const override { return this->vals.front(); }
-    T& front() override { return this->vals.front(); }
-
-    // Set the indices from some input
-    void swap_indices(std::vector<T> &_indices) { this->indices.swap(_indices); };
-
-    // Set the values from some input
-    void swap_vals(std::vector<T> &_vals) { this->vals.swap(_vals); };
 };
 }
 
