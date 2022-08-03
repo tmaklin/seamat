@@ -159,10 +159,44 @@ public:
     // Set the values from some input
     void swap_vals(std::vector<T> &_vals) { this->vals.swap(_vals); };
 };
+
+template <typename T, typename U> class SparseMatrix : public Matrix<T> {
+private:
+    // Sparse matrix implemented in the compressed column storage (CCS)
+    // format; for reference see but replace row with column
+    // https://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
+    //
+    std::vector<T> vals;
+    std::vector<U> row_ind;
+    std::vector<U> col_ptr;
+    T zero_val;
+
+public:
+    SparseMatrix() = default;
+    ~SparseMatrix() = default;
+
+    // Resize a matrix
+    void resize(const uint32_t new_rows, const uint32_t new_cols, const T initial) override;
+
+    // Access individual elements
+    T& operator()(uint32_t row, uint32_t col) override;
+    const T& operator()(uint32_t row, uint32_t col) const override;
+
+    // Get position of first element in the values
+    const T& front() const override { return this->vals.front(); }
+    T& front() override { return this->vals.front(); }
+
+    // Set the indices from some input
+    void swap_indices(std::vector<T> &_indices) { this->indices.swap(_indices); };
+
+    // Set the values from some input
+    void swap_vals(std::vector<T> &_vals) { this->vals.swap(_vals); };
+};
 }
 
 #include "../src/Matrix.cpp"
 #include "../src/DenseMatrix.cpp"
 #include "../src/IndexMatrix.cpp"
+#include "../src/SparseMatrix.cpp"
 
 #endif
