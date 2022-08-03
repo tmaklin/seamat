@@ -126,14 +126,32 @@ public:
 
 template <typename T, typename U> class IndexMatrix : public Matrix<T> {
 private:
-    std::vector<T> vals;
     uint32_t n_rows_vals;
     uint32_t n_cols_vals;
+    std::unique_ptr<Matrix<T>> vals;
     std::unique_ptr<Matrix<U>> indices;
 
 public:
     IndexMatrix() = default;
     ~IndexMatrix() = default;
+
+    // Parameter constructor
+    IndexMatrix(const uint32_t _rows, const uint32_t _cols, const uint32_t _n_rows_vals, const uint32_t _n_cols_vals, const T& _vals_initial, const U& _indices_initial) {
+	this->rows = _rows;
+	this->cols = _cols;
+	this->n_rows_vals = _n_rows_vals;
+	this->n_cols_vals = _n_cols_vals;
+	this->vals = this->vals.reset(DenseMatrix<T>(_rows, _cols, _vals_initial));
+	this->indices = this->indices.reset(DenseMatrix<U>(_n_rows_vals, _n_cols_vals, _indices_initial));
+    }
+
+    // Initialize from vals and indices
+    IndexMatrix(const Matrix<T> &_vals, const Matrix<U> &_indices) {
+	this->rows = indices.get_rows();
+	this->cols = indices.get_cols();
+	this->vals = _vals;
+	this->indices = _indices;
+    }
 
     // Resize a matrix
     void resize(const uint32_t new_rows, const uint32_t new_cols, const T initial) override;

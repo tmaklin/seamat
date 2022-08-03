@@ -29,17 +29,15 @@ void IndexMatrix<T,U>::resize(const uint32_t new_rows, const uint32_t new_cols, 
 // Access individual elements
 template <typename T, typename U>
 T& IndexMatrix<T,U>::operator()(uint32_t row, uint32_t col) {
-    uint32_t out_row = (*this->indices)(row, col);
-    uint32_t out_pos = out_row*this->n_cols_vals + col;
-    return this->vals[out_pos];
+    uint32_t out_col = (*this->indices)(row, col);
+    return (*this->vals)(col, out_col);
 }
 
 // Access individual elements (const)
 template <typename T, typename U>
 const T& IndexMatrix<T,U>::operator()(uint32_t row, uint32_t col) const {
-    uint32_t out_row = (*this->indices)(row, col);
-    uint32_t out_pos = out_row*this->n_cols_vals + col;
-    return this->vals[out_pos];
+    uint32_t out_col = (*this->indices)(row, col);
+    return (*this->vals)(col, out_col);
 }
 }
 
