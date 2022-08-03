@@ -75,21 +75,33 @@ SparseMatrix<T>::SparseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial)
 // Initialize from a DenseMatrix
 template<typename T>
 SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
-    this->zero_val = _zero_val;
     this->resize_rows(_vals.get_rows());
     this->resize_cols(_vals.get_cols());
+    this->zero_val = _zero_val;
 
-    this->row_ptr.resize(this->get_rows() + 1, 0);
-    this->col_ind.resize(this->get_rows()*this->get_cols(), 0);
-    this->vals.resize(this->get_rows()*this->get_cols(), 0);
+    uint64_t n_nonzero_elem = 0;
+    for (uint32_t i = 0; i < _vals.get_rows(); ++i) {
+	for (uint32_t j = 0; j < _vals.get_cols(); ++j) {
+	    if (!this->nearly_equal(_vals(i, j), this->zero_val)) {
+		++n_nonzero_elem;
+	    }
+	}
+    }
 
+    this->row_ptr.resize(_vals.get_rows() + 1, 0);
+    this->col_ind.resize(n_nonzero_elem, 0);
+    this->vals.resize(n_nonzero_elem, _zero_val);
+
+    uint32_t index = 0;
     for (uint32_t i = 0; i < this->get_rows(); ++i) {
 	this->row_ptr[i + 1] = this->row_ptr[i];
 	for (uint32_t j = 0; j < this->get_cols(); ++j) {
-	    if (_vals(i, j) != this->zero_val) { // todo: use std::nextafter for floating point comparisons
+	    const T &rhs_val = _vals(i, j);
+	    if (!this->nearly_equal(rhs_val, this->zero_val)) {
 		++this->row_ptr[i + 1];
-		this->col_ind[i*this->get_cols() + j] = j;
-		this->vals[i*this->get_cols() + j] = _vals(i, j);
+		this->col_ind[index] = j;
+		this->vals[index] = rhs_val;
+		++index;
 	    }
 	}
     }
