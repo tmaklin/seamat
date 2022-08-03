@@ -6,7 +6,7 @@ TEST_F(SparseMatrixTest, ParameterConstructorWorks) {
     EXPECT_EQ(this->n_cols, got.get_cols());
     for (uint32_t i = 0; i < this->n_rows; ++i) {
 	for (uint32_t j = 0; j < this->n_cols; ++j) {
-	    EXPECT_EQ(this->expected_mat[i*this->n_cols + j], got(i, j));
+	    EXPECT_EQ(this->initial_val, got(i, j));
 	}
     }
 }
@@ -18,7 +18,7 @@ TEST_F(SparseMatrixTest, CopyConstructorWorks) {
     EXPECT_EQ(this->n_cols, got.get_cols());
     for (uint32_t i = 0; i < this->n_rows; ++i) {
 	for (uint32_t j = 0; j < this->n_cols; ++j) {
-	    EXPECT_EQ(this->expected_mat[i*this->n_cols + j], got(i, j));
+	    EXPECT_EQ(this->initial_val, got(i, j));
 	}
     }
 }
@@ -35,7 +35,11 @@ TEST_F(SparseMatrixTest, CopyConstructorFromVectorWorks) {
 }
 
 TEST_F(SparseMatrixTest, CopyConstructorFrom2DVectorWorks) {
-    std::vector<std::vector<double>> input(3, std::vector<double>(7, 2.7));
+    std::vector<std::vector<double>> input(3, std::vector<double>());
+    input[0] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    input[1] = { 0.0, 2.7, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    input[2] = { 2.7, 0.0, 0.0, 0.0, 0.0, 0.0, 2.7 };
+
     seamat::SparseMatrix<double> got(input, 0.0);
     EXPECT_EQ(this->n_rows, got.get_rows());
     EXPECT_EQ(this->n_cols, got.get_cols());

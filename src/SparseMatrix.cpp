@@ -61,13 +61,13 @@ SparseMatrix<T>::SparseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial)
     this->resize_cols(_cols);
 
     uint64_t n_elements = _rows*_cols;
-    this->vals.resize(n_elements, _initial);
+    this->vals = std::vector<T>(n_elements, _initial);
     this->col_ind.resize(n_elements, 0);
     this->row_ptr.resize(_rows, 0);
     for (uint32_t i = 0; i < _rows; ++i) {
 	this->row_ptr[i + 1] = this->row_ptr[i] + _cols;
 	for (uint32_t j = 0; j < _cols; ++j) {
-	    this->col_ind[i + j] = j;
+	    this->col_ind[i*_cols + j] = j;
 	}
     }
 }

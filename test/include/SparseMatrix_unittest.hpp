@@ -13,9 +13,9 @@ class SparseMatrixTest : public ::testing::Test {
 	this->n_cols = 7;
 	this->initial_val = 2.7;
 	this->new_val = 3.14;
-	this->expected_mat = { 2.7, 2.7, 2.7, 2.7, 2.7, 2.7, 2.7,
-			       2.7, 2.7, 2.7, 2.7, 2.7, 2.7, 2.7,
-			       2.7, 2.7, 2.7, 2.7, 2.7, 2.7, 2.7 };
+	this->expected_mat = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+			       0.0, 2.7, 0.0, 0.0, 0.0, 0.0, 0.0,
+			       2.7, 0.0, 0.0, 0.0, 0.0, 0.0, 2.7 };
     }
     void TearDown() override {
 	this->expected_mat.clear();
