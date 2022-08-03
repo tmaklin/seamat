@@ -46,6 +46,19 @@ DenseMatrix<T>::DenseMatrix(const std::vector<std::vector<T>> &rhs) {
     }
 }
 
+// Copy constructor from another matrix
+template<typename T>
+DenseMatrix<T>::DenseMatrix(const Matrix<T> &rhs) {
+    this->resize_rows(rhs.get_rows());
+    this->resize_cols(rhs.get_cols());
+    mat.resize(this->get_rows()*this->get_cols());
+#pragma omp parallel for schedule(static)
+    for (uint32_t i = 0; i < this->get_rows(); ++i) {
+	for (uint32_t j = 0; j < this->get_cols(); ++j) {
+	    this->operator()(i, j) = rhs(i, j);
+	}
+    }
+}
 
 // Assignment Operator
 template<typename T>

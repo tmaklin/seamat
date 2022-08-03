@@ -116,6 +116,8 @@ public:
     DenseMatrix(const std::vector<T> &rhs, const uint32_t _rows, const uint32_t _cols);
     // Copy constructor from 2D vector
     DenseMatrix(const std::vector<std::vector<T>> &rhs);
+    // Copy constructor from another matrix
+    DenseMatrix(const Matrix<T> &rhs);
 
     // Assignment operator
     DenseMatrix<T>& operator=(const Matrix<T>& rhs);
@@ -139,23 +141,8 @@ public:
     IndexMatrix() = default;
     ~IndexMatrix() = default;
 
-    // Parameter constructor
-    IndexMatrix(const uint32_t _rows, const uint32_t _cols, const uint32_t _n_rows_vals, const uint32_t _n_cols_vals, const T& _vals_initial, const U& _indices_initial) {
-	this->resize_rows(_rows);
-	this->resize_cols(_cols);
-	this->n_rows_vals = _n_rows_vals;
-	this->n_cols_vals = _n_cols_vals;
-	this->vals = this->vals.reset(DenseMatrix<T>(_rows, _cols, _vals_initial));
-	this->indices = this->indices.reset(DenseMatrix<U>(_n_rows_vals, _n_cols_vals, _indices_initial));
-    }
-
     // Initialize from vals and indices
-    IndexMatrix(const Matrix<T> &_vals, const Matrix<U> &_indices) {
-	this->rows = indices.get_rows();
-	this->cols = indices.get_cols();
-	this->vals = _vals;
-	this->indices = _indices;
-    }
+    IndexMatrix(const Matrix<T> &_vals, const Matrix<U> &_indices, const bool store_as_sparse);
 
     // Resize a matrix
     void resize(const uint32_t new_rows, const uint32_t new_cols, const T initial) override;
