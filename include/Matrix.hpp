@@ -39,19 +39,19 @@ private:
 
 protected:
     // Derived classes can use these to resize the base class
-    void resize_rows(const uint32_t new_rows) { this->rows = new_rows; };
-    void resize_cols(const uint32_t new_cols) { this->cols = new_cols; };
+    void resize_rows(const size_t new_rows) { this->rows = new_rows; };
+    void resize_cols(const size_t new_cols) { this->cols = new_cols; };
 
 public:
     //////
     // Pure virtuals - must override in derived classes.
     ////
     // Resize a matrix
-    virtual void resize(const uint32_t new_rows, const uint32_t new_cols, const T initial) =0;
+    virtual void resize(const size_t new_rows, const size_t new_cols, const T initial) =0;
 
     // Access individual elements
-    virtual T& operator()(uint32_t row, uint32_t col) =0;
-    virtual const T& operator()(uint32_t row, uint32_t col) const =0;
+    virtual T& operator()(size_t row, size_t col) =0;
+    virtual const T& operator()(size_t row, size_t col) const =0;
 
     // Mathematical operators
     // Matrix-matrix in-place summation and subtraction
@@ -133,9 +133,9 @@ public:
     DenseMatrix() = default;
     ~DenseMatrix() = default;
     // Parameter constructor
-    DenseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial);
+    DenseMatrix(size_t _rows, size_t _cols, const T& _initial);
     // Copy constructor from contiguous 2D vector
-    DenseMatrix(const std::vector<T> &rhs, const uint32_t _rows, const uint32_t _cols);
+    DenseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols);
     // Copy constructor from 2D vector
     DenseMatrix(const std::vector<std::vector<T>> &rhs);
     // Copy constructor from another matrix
@@ -145,11 +145,11 @@ public:
     DenseMatrix<T>& operator=(const Matrix<T>& rhs);
 
    // Resize a matrix
-    void resize(const uint32_t new_rows, const uint32_t new_cols, const T initial) override;
+    void resize(const size_t new_rows, const size_t new_cols, const T initial) override;
 
     // Access individual elements
-    T& operator()(uint32_t row, uint32_t col) override;
-    const T& operator()(uint32_t row, uint32_t col) const override;
+    T& operator()(size_t row, size_t col) override;
+    const T& operator()(size_t row, size_t col) const override;
 
     // Mathematical operators
     // Matrix-matrix in-place summation and subtraction
