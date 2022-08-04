@@ -18,8 +18,8 @@
 namespace seamat {
 // Matrix-matrix addition
 template<typename T>
-Matrix<T> Matrix<T>::operator+(const Matrix<T>& rhs) const {
-    Matrix result(this->rows, this->cols, 0.0);
+Matrix<T>& Matrix<T>::operator+(const Matrix<T>& rhs) const {
+    Matrix<T> result(this->rows, this->cols, 0.0);
 
 #pragma omp parallel for schedule(static)
     for (uint32_t i = 0; i < this->rows; i++) {

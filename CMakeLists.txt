@@ -76,7 +76,8 @@ if(CMAKE_BUILD_TESTS)
   add_executable(runTests
     ${CMAKE_CURRENT_SOURCE_DIR}/test/src/DenseMatrix_unittest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/src/SparseMatrix_unittest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/src/IndexMatrix_unittest.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/src/IndexMatrix_unittest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/src/Matrix_unittest.cpp)
   add_test(runTests runTests)
 
   ## Link tests

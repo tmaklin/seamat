@@ -58,7 +58,7 @@ public:
     ////
     // Mathematical operators
     // Matrix-matrix summation and subtraction
-    Matrix<T> operator+(const Matrix<T>& rhs) const;
+    Matrix<T>& operator+(const Matrix<T>& rhs) const;
     Matrix<T>& operator+=(const Matrix<T>& rhs);
     Matrix<T> operator-(const Matrix<T>& rhs) const;
     Matrix<T>& operator-=(const Matrix<T>& rhs);
