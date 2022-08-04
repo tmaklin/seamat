@@ -14,17 +14,38 @@
 #include <cmath>
 
 #include "openmp_config.hpp"
+#include "seamat_exceptions.hpp"
 
 namespace seamat {
 // Matrix-matrix addition
 template<typename T>
-Matrix<T>& Matrix<T>::operator+(const Matrix<T>& rhs) const {
-    Matrix<T> result(this->rows, this->cols, 0.0);
+DenseMatrix<T>& Matrix<T>::operator+(const Matrix<T>& rhs) const {
+    // seamat::Matrix<T>::operator+
+    //
+    // Creates a new DenseMatrix<T> that contains the result of
+    // summing two instances of Matrix<T>.
+    //
+    //   Input:
+    //     `rhs`: Matrix to add,
+    //            must have the same dimensions as the caller.
+    //
+    //   Output:
+    //   `result`: A new matrix containing the sum of the caller and `rhs`.
+    //
+#if defined(SEAMAT_CHECK_BOUNDS) && (SEAMAT_CHECK_BOUNDS) == 1
+    try {
+	MatrixSizesAreEqual(*this, rhs);
+    } catch (const std::exception &e) {
+	throw e;
+    }
+#endif
+
+    DenseMatrix<T> result(this->get_rows(), this->get_cols(), (T)0);
 
 #pragma omp parallel for schedule(static)
-    for (uint32_t i = 0; i < this->rows; i++) {
-	for (uint32_t j = 0; j < this->cols; j++) {
-	    result(i, j) = this->operator()(i, j) + rhs(i,j);
+    for (size_t i = 0; i < this->get_rows(); ++i) {
+	for (size_t j = 0; j < this->get_cols(); ++j) {
+	    result(i, j) = this->operator()(i, j) + rhs(i, j);
 	}
     }
 
@@ -34,9 +55,24 @@ Matrix<T>& Matrix<T>::operator+(const Matrix<T>& rhs) const {
 // In-place matrix-matrix addition
 template<typename T>
 Matrix<T>& Matrix<T>::operator+=(const Matrix<T>& rhs) {
+    // seamat::Matrix<T>::operator+=
+    //
+    // Add values from rhs to the calling matrix in-place.
+    //
+    //   Input:
+    //     `rhs`: Matrix to add, must have the same dimensions as the caller.
+    //
+#if defined(SEAMAT_CHECK_BOUNDS) && (SEAMAT_CHECK_BOUNDS) == 1
+    try {
+	MatrixSizesAreEqual(*this, rhs);
+    } catch (const std::exception &e) {
+	throw e;
+    }
+#endif
+
 #pragma omp parallel for schedule(static)
-    for (uint32_t i = 0; i < this->rows; i++) {
-	for (uint32_t j = 0; j < this->cols; j++) {
+    for (size_t i = 0; i < this->get_rows(); i++) {
+	for (size_t j = 0; j < this->get_cols(); j++) {
 	    this->operator()(i, j) += rhs(i, j);
 	}
     }
@@ -44,33 +80,34 @@ Matrix<T>& Matrix<T>::operator+=(const Matrix<T>& rhs) {
     return *this;
 }
 
-// In-place left multiplication
-template<typename T>
-Matrix<T>& Matrix<T>::operator*=(const Matrix<T>& rhs) {
-    Matrix result = (*this) * rhs;
-    (*this) = result;
-    return *this;
-}
-
-// Fill matrix with sum of two matrices
-template <typename T>
-void Matrix<T>::sum_fill(const Matrix<T>& rhs1, const Matrix<T>& rhs2) {
-#pragma omp parallel for schedule(static)
-    for (uint32_t i = 0; i < this->rows; ++i) {
-	for (uint32_t j = 0; j < this->cols; ++j) {
-	    this->operator()(i, j) = rhs1(i, j) + rhs2(i, j);
-	}
-    }
-}
-
 // Matrix-matrix subtraction
 template<typename T>
-Matrix<T> Matrix<T>::operator-(const Matrix<T>& rhs) const {
-    Matrix result(this->rows, this->cols, 0.0);
+DenseMatrix<T>& Matrix<T>::operator-(const Matrix<T>& rhs) const {
+    // seamat::Matrix<T>::operator-
+    //
+    // Creates a new DenseMatrix<T> that contains the result of
+    // subtracting rhs from the caller.
+    //
+    //   Input:
+    //     `rhs`: Matrix to subtract,
+    //            must have the same dimensions as the caller.
+    //
+    //   Output:
+    //   `result`: A new matrix containing the result.
+    //
+#if defined(SEAMAT_CHECK_BOUNDS) && (SEAMAT_CHECK_BOUNDS) == 1
+    try {
+	MatrixSizesAreEqual(*this, rhs);
+    } catch (const std::exception &e) {
+	throw e;
+    }
+#endif
+
+    DenseMatrix<T> result(this->get_rows(), this->get_cols(), (T)0);
 
 #pragma omp parallel for schedule(static)
-    for (uint32_t i = 0; i < this->rows; i++) {
-	for (uint32_t j = 0; j < this->cols; j++) {
+    for (size_t i = 0; i < this->get_rows(); i++) {
+	for (size_t j = 0; j < this->get_cols(); j++) {
 	    result(i, j) = this->operator()(i, j) - rhs(i, j);
 	}
     }
@@ -81,9 +118,24 @@ Matrix<T> Matrix<T>::operator-(const Matrix<T>& rhs) const {
 // In-place matrix-matrix subtraction
 template<typename T>
 Matrix<T>& Matrix<T>::operator-=(const Matrix<T>& rhs) {
+    // seamat::Matrix<T>::operator-=
+    //
+    // Subtract values of rhs from the calling matrix in-place.
+    //
+    //   Input:
+    //     `rhs`: Matrix to subtract, must have the same dimensions as the caller.
+    //
+#if defined(SEAMAT_CHECK_BOUNDS) && (SEAMAT_CHECK_BOUNDS) == 1
+    try {
+	MatrixSizesAreEqual(*this, rhs);
+    } catch (const std::exception &e) {
+	throw e;
+    }
+#endif
+
 #pragma omp parallel for schedule(static)
-    for (uint32_t i = 0; i < this->rows; i++) {
-	for (uint32_t j = 0; j < this->cols; j++) {
+    for (size_t i = 0; i < this->get_rows(); i++) {
+	for (size_t j = 0; j < this->get_cols(); j++) {
 	    this->operator()(i, j) -= rhs(i, j);
 	}
     }
@@ -91,21 +143,106 @@ Matrix<T>& Matrix<T>::operator-=(const Matrix<T>& rhs) {
     return *this;
 }
 
-// Matrix-matrix left multiplication
+// Matrix-matrix right multiplication
 template<typename T>
-Matrix<T> Matrix<T>::operator*(const Matrix<T>& rhs) const {
-    Matrix result(this->rows, this->cols, 0.0);
+DenseMatrix<T>& Matrix<T>::operator*(const Matrix<T>& rhs) const {
+    // seamat::Matrix<T>::operator*
+    //
+    // Creates a new DenseMatrix<T> that contains the result of
+    // right multiplying the caller with rhs.
+    //
+    //   Input:
+    //     `rhs`: Matrix to right multiply with,
+    //            must have the same number of rows as the caller has columns.
+    //
+    //   Output:
+    //   `result`: A new matrix containing the result.
+    //
+#if defined(SEAMAT_CHECK_BOUNDS) && (SEAMAT_CHECK_BOUNDS) == 1
+    try {
+	MatricesCanBeMultiplied(*this, rhs);
+    } catch (const std::exception &e) {
+	throw e;
+    }
+#endif
+
+    DenseMatrix<T> result(this->get_rows(), rhs.get_cols(), (T)0);
 
 #pragma omp parallel for schedule(static)
-    for (uint32_t i = 0; i < this->rows; i++) {
-	for (uint32_t j = 0; j < this->cols; j++) {
-	    for (uint32_t k = 0; k < this->rows; k++) {
-		result(i, j) += this->operator()(i, k) * rhs(k, j);
+    for (size_t i = 0; i < this->get_rows(); i++) {
+	for (size_t j = 0; j < this->get_cols(); j++) {
+	    for (size_t k = 0; k < rhs.get_cols(); k++) {
+		result(i, k) += this->operator()(i, j) * rhs(j, k);
 	    }
 	}
     }
 
     return result;
+}
+
+// Matrix-matrix left multiplication
+template<typename T>
+DenseMatrix<T>& Matrix<T>::operator%(const Matrix<T>& lhs) const {
+    // seamat::Matrix<T>::operator%
+    //
+    // Creates a new DenseMatrix<T> that contains the result of
+    // left multiplying the caller with lhs.
+    //
+    //   Input:
+    //     `lhs`: Matrix to right multiply with,
+    //            must have the same number of columns as the caller has rows.
+    //
+    //   Output:
+    //   `result`: A new matrix containing the result.
+    //
+    DenseMatrix<T> &result = lhs * (*this); // operator* checks bounds
+    return result;
+}
+
+
+
+// In-place right multiplication
+template<typename T>
+Matrix<T>& Matrix<T>::operator*=(const Matrix<T>& rhs) {
+    // seamat::Matrix<T>::operator*=
+    //
+    // Matrix right-multiplication of the caller with rhs in-place.
+    //
+    //   Input:
+    //     `rhs`: Matrix to right multiply with,
+    //            must have the same number of rows as the caller has columns.
+    //
+    const DenseMatrix<T> &result = (*this) * rhs;
+    (*this) = result;
+    return *this;
+}
+
+// In-place left multiplication
+template<typename T>
+Matrix<T>& Matrix<T>::operator%=(const Matrix<T>& lhs) {
+    // seamat::Matrix<T>::operator%=
+    //
+    // Matrix left-multiplication of the caller with lhs in-place.
+    //
+    //   Input:
+    //     `lhs`: Matrix to left multiply with,
+    //            must have the same number of columns as the caller has rows.
+    //
+    const DenseMatrix<T> &result = lhs * (*this);
+    (*this) = result;
+    return *this;
+}
+
+
+// Fill matrix with sum of two matrices
+template <typename T>
+void Matrix<T>::sum_fill(const Matrix<T>& rhs1, const Matrix<T>& rhs2) {
+#pragma omp parallel for schedule(static)
+    for (uint32_t i = 0; i < this->rows; ++i) {
+	for (uint32_t j = 0; j < this->cols; ++j) {
+	    this->operator()(i, j) = rhs1(i, j) + rhs2(i, j);
+	}
+    }
 }
 
 // Transpose matrix

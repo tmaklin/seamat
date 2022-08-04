@@ -28,13 +28,14 @@
 // at the very end of this file.
 
 namespace seamat {
-// Forward declare SparseMatrix
+// Forward declare implementations of abstract class Matrix
+template <typename T> class DenseMatrix;
 template <typename T> class SparseMatrix;
 
 template <typename T> class Matrix {
 private:
-    uint32_t rows;
-    uint32_t cols;
+    size_t rows;
+    size_t cols;
 
 protected:
     // Derived classes can use these to resize the base class
@@ -58,15 +59,20 @@ public:
     ////
     // Mathematical operators
     // Matrix-matrix summation and subtraction
-    Matrix<T>& operator+(const Matrix<T>& rhs) const;
+    DenseMatrix<T>& operator+(const Matrix<T>& rhs) const;
     Matrix<T>& operator+=(const Matrix<T>& rhs);
-    Matrix<T> operator-(const Matrix<T>& rhs) const;
+    DenseMatrix<T>& operator-(const Matrix<T>& rhs) const;
     Matrix<T>& operator-=(const Matrix<T>& rhs);
 
-    // Matrix product
-    Matrix<T> operator*(const Matrix<T>& rhs) const;
-    // In-place left multiplication
+    // Matrix-matrix right multiplication
+    DenseMatrix<T>& operator*(const Matrix<T>& rhs) const;
+    // Matrix-matrix left multiplication
+    DenseMatrix<T>& operator%(const Matrix<T>& rhs) const;
+
+    // In-place right multiplication
     Matrix<T>& operator*=(const Matrix<T>& rhs);
+    // In-place left multiplication
+    Matrix<T>& operator%=(const Matrix<T>& rhs);
 
     // Matrix-scalar, only in-place
     Matrix<T>& operator+=(const T& rhs);
