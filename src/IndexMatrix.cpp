@@ -19,21 +19,21 @@
 namespace seamat {
 // Resize a matrix
 template<typename T, typename U>
-void IndexMatrix<T,U>::resize(const uint32_t new_rows, const uint32_t new_cols, const T initial) {
+void IndexMatrix<T,U>::resize(const size_t new_rows, const size_t new_cols, const T initial) {
     throw std::runtime_error("Resizing an IndexMatrix is not supported.");
 }
 
 // Access individual elements
 template <typename T, typename U>
-T& IndexMatrix<T,U>::operator()(uint32_t row, uint32_t col) {
-    uint32_t out_col = (*this->indices)(row, col);
+T& IndexMatrix<T,U>::operator()(size_t row, size_t col) {
+    size_t out_col = (*this->indices)(row, col);
     return (*this->vals)(row, out_col);
 }
 
 // Access individual elements (const)
 template <typename T, typename U>
-const T& IndexMatrix<T,U>::operator()(uint32_t row, uint32_t col) const {
-    uint32_t out_col = (*this->indices)(row, col);
+const T& IndexMatrix<T,U>::operator()(size_t row, size_t col) const {
+    size_t out_col = (*this->indices)(row, col);
     return (*this->vals)(row, out_col);
 }
 

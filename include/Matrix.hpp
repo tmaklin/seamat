@@ -175,8 +175,8 @@ public:
 
 template <typename T, typename U> class IndexMatrix : public Matrix<T> {
 private:
-    uint32_t n_rows_vals;
-    uint32_t n_cols_vals;
+    size_t n_rows_vals;
+    size_t n_cols_vals;
     std::unique_ptr<Matrix<T>> vals;
     std::unique_ptr<Matrix<U>> indices;
 
@@ -188,11 +188,11 @@ public:
     IndexMatrix(const Matrix<T> &_vals, const Matrix<U> &_indices, const bool store_as_sparse);
 
     // Resize a matrix
-    void resize(const uint32_t new_rows, const uint32_t new_cols, const T initial) override;
+    void resize(const size_t new_rows, const size_t new_cols, const T initial) override;
 
     // Access individual elements
-    T& operator()(uint32_t row, uint32_t col) override;
-    const T& operator()(uint32_t row, uint32_t col) const override;
+    T& operator()(size_t row, size_t col) override;
+    const T& operator()(size_t row, size_t col) const override;
 
     // Mathematical operators
     // Matrix-matrix in-place summation and subtraction
