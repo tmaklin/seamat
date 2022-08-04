@@ -101,6 +101,187 @@ template <typename T>
 const T& DenseMatrix<T>::operator()(uint32_t row, uint32_t col) const {
     return this->mat[row*this->get_cols() + col];
 }
+
+
+// In-place matrix-matrix subtraction
+template<typename T>
+DenseMatrix<T>& DenseMatrix<T>::operator-=(const Matrix<T>& rhs) {
+    // seamat::DenseMatrix<T>::operator-=
+    //
+    // Subtract values of rhs from the calling matrix in-place.
+    //
+    //   Input:
+    //     `rhs`: Matrix to subtract, must have the same dimensions as the caller.
+    //
+#if defined(SEAMAT_CHECK_BOUNDS) && (SEAMAT_CHECK_BOUNDS) == 1
+    try {
+	MatrixSizesAreEqual(*this, rhs);
+    } catch (const std::exception &e) {
+	throw e;
+    }
+#endif
+
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->get_rows(); i++) {
+	for (size_t j = 0; j < this->get_cols(); j++) {
+	    this->operator()(i, j) -= rhs(i, j);
+	}
+    }
+
+    return *this;
+}
+
+// In-place matrix-matrix addition
+template<typename T>
+DenseMatrix<T>& DenseMatrix<T>::operator+=(const Matrix<T>& rhs) {
+    // seamat::DenseMatrix<T>::operator+=
+    //
+    // Add values from rhs to the calling matrix in-place.
+    //
+    //   Input:
+    //     `rhs`: Matrix to add, must have the same dimensions as the caller.
+    //
+#if defined(SEAMAT_CHECK_BOUNDS) && (SEAMAT_CHECK_BOUNDS) == 1
+    try {
+	MatrixSizesAreEqual(*this, rhs);
+    } catch (const std::exception &e) {
+	throw e;
+    }
+#endif
+
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->get_rows(); i++) {
+	for (size_t j = 0; j < this->get_cols(); j++) {
+	    this->operator()(i, j) += rhs(i, j);
+	}
+    }
+
+    return *this;
+}
+
+// In-place right multiplication
+template<typename T>
+DenseMatrix<T>& DenseMatrix<T>::operator*=(const Matrix<T>& rhs) {
+    // seamat::DenseMatrix<T>::operator*=
+    //
+    // Matrix right-multiplication of the caller with rhs in-place.
+    //
+    //   Input:
+    //     `rhs`: Matrix to right multiply with,
+    //            must have the same number of rows as the caller has columns.
+    //
+    const DenseMatrix<T> &result = (*this) * rhs;
+    (*this) = result;
+    return *this;
+}
+
+// In-place left multiplication
+template<typename T>
+DenseMatrix<T>& DenseMatrix<T>::operator%=(const Matrix<T>& lhs) {
+    // seamat::DenseMatrix<T>::operator%=
+    //
+    // Matrix left-multiplication of the caller with lhs in-place.
+    //
+    //   Input:
+    //     `lhs`: Matrix to left multiply with,
+    //            must have the same number of columns as the caller has rows.
+    //
+    const DenseMatrix<T> &result = lhs * (*this);
+    (*this) = result;
+    return *this;
+}
+
+// In-place matrix-scalar addition
+template<typename T>
+DenseMatrix<T>& DenseMatrix<T>::operator+=(const T& scalar) {
+    // seamat::DenseMatrix<T>::operator+=
+    //
+    // In-place addition of a scalar to caller.
+    //
+    //   Input:
+    //     `scalar`: Scalar value to add to all caller values.
+    //
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->get_rows(); i++) {
+	for (size_t j = 0; j < this->get_cols(); j++) {
+	    this->operator()(i, j) += scalar;
+	}
+    }
+
+    return *this;
+}
+
+// In-place matrix-scalar subtraction
+template<typename T>
+DenseMatrix<T>& DenseMatrix<T>::operator-=(const T& scalar) {
+    // seamat::DenseMatrix<T>::operator-=
+    //
+    // In-place subtraction of a scalar from the caller.
+    //
+    //   Input:
+    //     `scalar`: Scalar value to subtract from all caller values.
+    //
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->get_rows(); i++) {
+	for (size_t j=0; j < this->get_cols(); j++) {
+	    this->operator()(i, j) -= scalar;
+	}
+    }
+
+    return *this;
+}
+
+// In-place matrix-scalar multiplication
+template<typename T>
+DenseMatrix<T>& DenseMatrix<T>::operator*=(const T& scalar) {
+    // seamat::DenseMatrix<T>::operator*=
+    //
+    // In-place multiplication of the caller with a scalar.
+    //
+    //   Input:
+    //     `scalar`: Scalar value to multiply all caller values with.
+    //
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->get_rows(); ++i) {
+	for (size_t j = 0; j < this->get_cols(); ++j) {
+	    this->operator()(i, j) *= scalar;
+	}
+    }
+
+    return *this;
+}
+
+// In-place matrix-scalar division
+template<typename T>
+DenseMatrix<T>& DenseMatrix<T>::operator/=(const T& scalar) {
+    // seamat::DenseMatrix<T>::operator/=
+    //
+    // In-place division of the caller with a scalar.
+    //
+    //   Input:
+    //     `scalar`: Scalar value to divide all caller values with.
+    //
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->get_rows(); ++i) {
+	for (size_t j = 0; j < this->get_cols(); ++j) {
+	    this->operator()(i, j) /= scalar;
+	}
+    }
+
+    return *this;
+}
+
+// Fill matrix with sum of two matrices
+template <typename T>
+template <typename V, typename U>
+void DenseMatrix<T>::sum_fill(const Matrix<V>& rhs1, const Matrix<U>& rhs2) {
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->get_rows(); ++i) {
+	for (size_t j = 0; j < this->get_cols(); ++j) {
+	    this->operator()(i, j) = (T)rhs1(i, j) + (T)rhs2(i, j);
+	}
+    }
+}
 }
 
 #endif
