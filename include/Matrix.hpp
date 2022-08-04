@@ -53,60 +53,70 @@ public:
     virtual T& operator()(uint32_t row, uint32_t col) =0;
     virtual const T& operator()(uint32_t row, uint32_t col) const =0;
 
+    // Mathematical operators
+    // Matrix-matrix in-place summation and subtraction
+    virtual Matrix<T>& operator+=(const Matrix<T>& rhs) =0;
+    virtual Matrix<T>& operator-=(const Matrix<T>& rhs) =0;
+
+    // In-place right multiplication
+    virtual Matrix<T>& operator*=(const Matrix<T>& rhs) =0;
+    // In-place left multiplication
+    virtual Matrix<T>& operator%=(const Matrix<T>& rhs) =0;
+
+    // Matrix-scalar, in-place
+    virtual Matrix<T>& operator+=(const T& rhs) =0;
+    virtual Matrix<T>& operator-=(const T& rhs) =0;
+    virtual Matrix<T>& operator*=(const T& rhs) =0;
+    virtual Matrix<T>& operator/=(const T& rhs) =0;
+
     //////
-    // Implemented in Matrix.cpp - these functions only use the
-    // pure virtual functions and the private member variables.
+    // Implemented in Matrix.cpp - these functions only use the pure
+    // virtual functions and the private member variables, and are
+    // generic in the sense that they work with any input class
+    // derived from Matrix<T>.
     ////
     // Mathematical operators
     // Matrix-matrix summation and subtraction
     DenseMatrix<T>& operator+(const Matrix<T>& rhs) const;
-    Matrix<T>& operator+=(const Matrix<T>& rhs);
     DenseMatrix<T>& operator-(const Matrix<T>& rhs) const;
-    Matrix<T>& operator-=(const Matrix<T>& rhs);
 
     // Matrix-matrix right multiplication
-    DenseMatrix<T>& operator*(const Matrix<T>& rhs) const;
+    DenseMatrix<T> operator*(const Matrix<T>& rhs) const;
     // Matrix-matrix left multiplication
-    DenseMatrix<T>& operator%(const Matrix<T>& rhs) const;
+    DenseMatrix<T> operator%(const Matrix<T>& rhs) const;
 
-    // In-place right multiplication
-    Matrix<T>& operator*=(const Matrix<T>& rhs);
-    // In-place left multiplication
-    Matrix<T>& operator%=(const Matrix<T>& rhs);
-
-    // Matrix-scalar, only in-place
-    Matrix<T>& operator+=(const T& rhs);
-    Matrix<T>& operator-=(const T& rhs);
-    Matrix<T>& operator*=(const T& rhs);
-    Matrix<T>& operator/=(const T& rhs);
-
-    // Matrix-matrix comparison
-    bool operator==(const Matrix<double>& rhs) const;
+    // Matrix-matrix comparisons
+    bool operator==(const Matrix<T>& rhs) const;
 
     // Matrix-vector multiplication
-    std::vector<T> operator*(const std::vector<T>& rhs) const;
-    std::vector<double> operator*(const std::vector<long unsigned>& rhs) const;
+    template <typename U>
+    std::vector<T> operator*(const std::vector<U>& rhs) const;
+    template <typename U>
+    std::vector<U> operator*(const std::vector<U>& rhs) const;
 
     // Matrix-vector right multiplication, store result in arg
-    void right_multiply(const std::vector<long unsigned>& rhs, std::vector<T>& result) const;
-    void exp_right_multiply(const std::vector<T>& rhs, std::vector<T>& result) const;
+    template <typename U, typename V>
+    void right_multiply(const std::vector<U>& rhs, std::vector<V> &result) const;
+    template <typename U, typename V>
+    void logspace_right_multiply(const std::vector<U>& rhs, std::vector<V>& result) const;
 
+    // LogSumExp a column
+    template <typename V>
+    T log_sum_exp_col(const size_t col_id) const;
+
+    // Generic transpose
+    DenseMatrix<T> transpose() const;
+
+    // Get the number of rows in the matrix
+    size_t get_rows() const { return this->rows; }
+    // Get the number of columns of the matrix
+    size_t get_cols() const { return this->cols; }
+
+    // Turn an arbitrary matrix into a dense matrix
+    DenseMatrix<T> densify() const { return DenseMatrix<T>(this); }
     // Turn an arbitrary matrix into a column sparse matrix
     SparseMatrix<T> sparsify(const T &zero_val) const { return SparseMatrix<T>(this, zero_val); }
 
-    // LogSumExp a Matrix column
-    T log_sum_exp_col(uint32_t col_id) const;
-
-    // Fill a matrix with the sum of two matrices
-    void sum_fill(const Matrix<T>& rhs1, const Matrix<T>& rhs2);
-
-    // Transpose
-    Matrix<T> transpose() const;
-
-    // Get the number of rows of the matrix
-    uint32_t get_rows() const { return this->rows; }
-    // Get the number of columns of the matrix
-    uint32_t get_cols() const { return this->cols; }
 };
 
 template <typename T> class DenseMatrix : public Matrix<T> {
@@ -134,6 +144,27 @@ public:
     // Access individual elements
     T& operator()(uint32_t row, uint32_t col) override;
     const T& operator()(uint32_t row, uint32_t col) const override;
+
+    // Mathematical operators
+    // Matrix-matrix in-place summation and subtraction
+    DenseMatrix<T>& operator+=(const Matrix<T>& rhs) override;
+    DenseMatrix<T>& operator-=(const Matrix<T>& rhs) override;
+
+    // In-place right multiplication
+    DenseMatrix<T>& operator*=(const Matrix<T>& rhs) override;
+    // In-place left multiplication
+    DenseMatrix<T>& operator%=(const Matrix<T>& rhs) override;
+
+    // Matrix-scalar, in-place
+    DenseMatrix<T>& operator+=(const T& rhs);
+    DenseMatrix<T>& operator-=(const T& rhs);
+    DenseMatrix<T>& operator*=(const T& rhs);
+    DenseMatrix<T>& operator/=(const T& rhs);
+
+    // Fill a matrix with the sum of two matrices in-place
+    template <typename V, typename U>
+    void sum_fill(const Matrix<V>& rhs1, const Matrix<U>& rhs2);
+
 };
 
 template <typename T, typename U> class IndexMatrix : public Matrix<T> {
