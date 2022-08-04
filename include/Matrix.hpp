@@ -193,6 +193,23 @@ public:
     // Access individual elements
     T& operator()(uint32_t row, uint32_t col) override;
     const T& operator()(uint32_t row, uint32_t col) const override;
+
+    // Mathematical operators
+    // Matrix-matrix in-place summation and subtraction
+    IndexMatrix<T, U>& operator+=(const Matrix<T>& rhs) override;
+    IndexMatrix<T, U>& operator-=(const Matrix<T>& rhs) override;
+
+    // In-place right multiplication
+    IndexMatrix<T, U>& operator*=(const Matrix<T>& rhs) override;
+    // In-place left multiplication
+    IndexMatrix<T, U>& operator%=(const Matrix<T>& rhs) override;
+
+    // Matrix-scalar, in-place
+    IndexMatrix<T, U>& operator+=(const T& rhs) override;
+    IndexMatrix<T, U>& operator-=(const T& rhs) override;
+    IndexMatrix<T, U>& operator*=(const T& rhs) override;
+    IndexMatrix<T, U>& operator/=(const T& rhs) override;
+
 };
 
 template <typename T> class SparseMatrix : public Matrix<T> {
