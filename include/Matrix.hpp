@@ -85,6 +85,12 @@ public:
     // Matrix-matrix left multiplication
     DenseMatrix<T> operator%(const Matrix<T>& rhs) const;
 
+    // Matrix-scalar
+    DenseMatrix<T> operator+(const T& rhs);
+    DenseMatrix<T> operator-(const T& rhs);
+    DenseMatrix<T> operator*(const T& rhs);
+    DenseMatrix<T> operator/(const T& rhs);
+
     // Matrix-matrix comparisons
     bool operator==(const Matrix<T>& rhs) const;
 

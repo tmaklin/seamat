@@ -144,6 +144,92 @@ DenseMatrix<T> Matrix<T>::operator%(const Matrix<T>& lhs) const {
     return result;
 }
 
+// Matrix-scalar addition
+template<typename T>
+DenseMatrix<T> Matrix<T>::operator+(const T& scalar) {
+    // seamat::Matrix<T>::operator+
+    //
+    // Addition of a scalar to caller.
+    //
+    //   Input:
+    //     `scalar`: Scalar value to add to all caller values.
+    //
+    //   Output:
+    //     `result`: Result of the addition.
+    //
+    DenseMatrix<T> result(this->get_rows(), this->get_cols(), scalar);
+    result += *this;
+
+    return result;
+}
+
+// Matrix-scalar subtraction
+template<typename T>
+DenseMatrix<T> Matrix<T>::operator-(const T& scalar) {
+    // seamat::Matrix<T>::operator-
+    //
+    // Subtraction of a scalar from the caller.
+    //
+    //   Input:
+    //     `scalar`: Scalar value to subtract from all caller values.
+    //
+    //   Output:
+    //     `result`: Result of the subtraction.
+    //
+    DenseMatrix<T> result(this->get_rows(), this->get_cols(), -scalar);
+    result += *this;
+
+    return result;
+}
+
+// Matrix-scalar multiplication
+template<typename T>
+DenseMatrix<T> Matrix<T>::operator*(const T& scalar) {
+    // seamat::Matrix<T>::operator*
+    //
+    // Multiplication of the caller with a scalar.
+    //
+    //   Input:
+    //     `scalar`: Scalar value to multiply all caller values with.
+    //
+    //   Output:
+    //     `result`: Result of the multiplication.
+    //
+    DenseMatrix<T> result(this->get_rows(), this->get_cols(), (T)0);
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->get_rows(); ++i) {
+	for (size_t j = 0; j < this->get_cols(); ++j) {
+	    result(i, j) = this->operator()(i, j) * scalar;
+	}
+    }
+
+    return result;
+}
+
+// Matrix-scalar division
+template<typename T>
+DenseMatrix<T> Matrix<T>::operator/(const T& scalar) {
+    // seamat::Matrix<T>::operator/
+    //
+    // Division of the caller with a scalar.
+    //
+    //   Input:
+    //     `scalar`: Scalar value to divide all caller values with.
+    //
+    //   Output:
+    //     `result`: Result of the division.
+    //
+    DenseMatrix<T> result(this->get_rows(), this->get_cols(), (T)0);
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->get_rows(); ++i) {
+	for (size_t j = 0; j < this->get_cols(); ++j) {
+	    result(i, j) = this->operator()(i, j) / scalar;
+	}
+    }
+
+    return result;
+}
+
 // Matrix-matrix comparison
 template<typename T>
 bool Matrix<T>::operator==(const Matrix<T>& rhs) const {
