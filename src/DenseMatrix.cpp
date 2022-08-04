@@ -275,6 +275,15 @@ DenseMatrix<T>& DenseMatrix<T>::operator/=(const T& scalar) {
 template <typename T>
 template <typename V, typename U>
 void DenseMatrix<T>::sum_fill(const Matrix<V>& rhs1, const Matrix<U>& rhs2) {
+#if defined(SEAMAT_CHECK_BOUNDS) && (SEAMAT_CHECK_BOUNDS) == 1
+    try {
+	MatrixSizesAreEqual(*this, rhs1);
+	MatrixSizesAreEqual(*this, rhs2);
+    } catch (const std::exception &e) {
+	throw e;
+    }
+#endif
+
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < this->get_rows(); ++i) {
 	for (size_t j = 0; j < this->get_cols(); ++j) {
