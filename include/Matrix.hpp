@@ -228,19 +228,6 @@ private:
     T* get_address(size_t row, size_t col);
     const T* get_address(size_t row, size_t col) const;
 
-    bool nearly_equal(double a, double b)
-    {
-	return std::nextafter(a, std::numeric_limits<double>::lowest()) <= b
-      && std::nextafter(a, std::numeric_limits<double>::max()) >= b;
-    }
-
-    bool nearly_equal(double a, double b, int factor /* a factor of epsilon */)
-    {
-	double min_a = a - (a - std::nextafter(a, std::numeric_limits<double>::lowest())) * factor;
-	double max_a = a + (std::nextafter(a, std::numeric_limits<double>::max()) - a) * factor;
-
-	return min_a <= b && max_a >= b;
-    }
 public:
     SparseMatrix() = default;
     ~SparseMatrix() = default;

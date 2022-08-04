@@ -15,6 +15,7 @@
 #include <stdexcept>
 
 #include "openmp_config.hpp"
+#include "math_util.hpp"
 
 namespace seamat {
 template<typename T>
@@ -82,7 +83,7 @@ SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
     uint64_t n_nonzero_elem = 0;
     for (size_t i = 0; i < _vals.get_rows(); ++i) {
 	for (size_t j = 0; j < _vals.get_cols(); ++j) {
-	    if (!this->nearly_equal(_vals(i, j), this->zero_val)) {
+	    if (!nearly_equal<T>(_vals(i, j), this->zero_val)) {
 		++n_nonzero_elem;
 	    }
 	}
@@ -97,7 +98,7 @@ SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
 	this->row_ptr[i + 1] = this->row_ptr[i];
 	for (size_t j = 0; j < this->get_cols(); ++j) {
 	    const T &rhs_val = _vals(i, j);
-	    if (!this->nearly_equal(rhs_val, this->zero_val)) {
+	    if (!nearly_equal<T>(rhs_val, this->zero_val)) {
 		++this->row_ptr[i + 1];
 		this->col_ind[index] = j;
 		this->vals[index] = rhs_val;
@@ -150,7 +151,7 @@ SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const size_t _rows, con
     uint64_t n_nonzero_elem = 0;
     for (size_t i = 0; i < _rows; ++i) {
 	for (size_t j = 0; j < _cols; ++j) {
-	    if (!this->nearly_equal(rhs[i*_cols + j], this->zero_val)) {
+	    if (!nearly_equal<T>(rhs[i*_cols + j], this->zero_val)) {
 		++n_nonzero_elem;
 	    }
 	}
@@ -165,7 +166,7 @@ SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const size_t _rows, con
 	this->row_ptr[i + 1] = this->row_ptr[i];
 	for (size_t j = 0; j < this->get_cols(); ++j) {
 	    const T &rhs_val = rhs[i*_cols + j];
-	    if (!this->nearly_equal(rhs_val, this->zero_val)) {
+	    if (!nearly_equal<T>(rhs_val, this->zero_val)) {
 		++this->row_ptr[i + 1];
 		this->col_ind[index] = j;
 		this->vals[index] = rhs_val;
