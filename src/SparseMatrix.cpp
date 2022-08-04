@@ -18,14 +18,14 @@
 
 namespace seamat {
 template<typename T>
-T* SparseMatrix<T>::get_address(uint32_t row, uint32_t col) {
+T* SparseMatrix<T>::get_address(size_t row, size_t col) {
     // Returns the position of element (i, j) in this->vals
-    uint32_t row_start = this->row_ptr[row];
-    uint32_t row_end = this->row_ptr[row + 1];
-    uint32_t nnz_row = row_end - row_start; // Number of non-zero elements in row `row`.
+    size_t row_start = this->row_ptr[row];
+    size_t row_end = this->row_ptr[row + 1];
+    size_t nnz_row = row_end - row_start; // Number of non-zero elements in row `row`.
     if (nnz_row > 0) {
-	for (uint32_t i = 0; i < nnz_row; ++i) {
-	    uint32_t index = row_start + i;
+	for (size_t i = 0; i < nnz_row; ++i) {
+	    size_t index = row_start + i;
 	    if (this->col_ind[index] == col) {
 		return &this->vals[index];
 	    }
@@ -35,14 +35,14 @@ T* SparseMatrix<T>::get_address(uint32_t row, uint32_t col) {
 }
 
 template<typename T>
-const T* SparseMatrix<T>::get_address(uint32_t row, uint32_t col) const {
+const T* SparseMatrix<T>::get_address(size_t row, size_t col) const {
     // Returns the position of element (i, j) in this->vals
-    uint32_t row_start = this->row_ptr[row];
-    uint32_t row_end = this->row_ptr[row + 1];
-    uint32_t nnz_row = row_end - row_start; // Number of non-zero elements in row `row`.
+    size_t row_start = this->row_ptr[row];
+    size_t row_end = this->row_ptr[row + 1];
+    size_t nnz_row = row_end - row_start; // Number of non-zero elements in row `row`.
     if (nnz_row > 0) {
-	for (uint32_t i = 0; i < nnz_row; ++i) {
-	    uint32_t index = row_start + i;
+	for (size_t i = 0; i < nnz_row; ++i) {
+	    size_t index = row_start + i;
 	    if (this->col_ind[index] == col) {
 		return &this->vals[index];
 	    }
@@ -53,7 +53,7 @@ const T* SparseMatrix<T>::get_address(uint32_t row, uint32_t col) const {
 
 // Parameter constructor
 template<typename T>
-SparseMatrix<T>::SparseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial) {
+SparseMatrix<T>::SparseMatrix(size_t _rows, size_t _cols, const T& _initial) {
     // Initializes a dense SparseMatrix; use
     // SparseMatrix<T>::remove_nonzeros to sparsify the matrix after
     // filling it.
@@ -64,9 +64,9 @@ SparseMatrix<T>::SparseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial)
     this->vals = std::vector<T>(n_elements, _initial);
     this->col_ind.resize(n_elements, 0);
     this->row_ptr.resize(_rows, 0);
-    for (uint32_t i = 0; i < _rows; ++i) {
+    for (size_t i = 0; i < _rows; ++i) {
 	this->row_ptr[i + 1] = this->row_ptr[i] + _cols;
-	for (uint32_t j = 0; j < _cols; ++j) {
+	for (size_t j = 0; j < _cols; ++j) {
 	    this->col_ind[i*_cols + j] = j;
 	}
     }
@@ -80,8 +80,8 @@ SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
     this->zero_val = _zero_val;
 
     uint64_t n_nonzero_elem = 0;
-    for (uint32_t i = 0; i < _vals.get_rows(); ++i) {
-	for (uint32_t j = 0; j < _vals.get_cols(); ++j) {
+    for (size_t i = 0; i < _vals.get_rows(); ++i) {
+	for (size_t j = 0; j < _vals.get_cols(); ++j) {
 	    if (!this->nearly_equal(_vals(i, j), this->zero_val)) {
 		++n_nonzero_elem;
 	    }
@@ -92,10 +92,10 @@ SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
     this->col_ind.resize(n_nonzero_elem, 0);
     this->vals.resize(n_nonzero_elem, _zero_val);
 
-    uint32_t index = 0;
-    for (uint32_t i = 0; i < this->get_rows(); ++i) {
+    size_t index = 0;
+    for (size_t i = 0; i < this->get_rows(); ++i) {
 	this->row_ptr[i + 1] = this->row_ptr[i];
-	for (uint32_t j = 0; j < this->get_cols(); ++j) {
+	for (size_t j = 0; j < this->get_cols(); ++j) {
 	    const T &rhs_val = _vals(i, j);
 	    if (!this->nearly_equal(rhs_val, this->zero_val)) {
 		++this->row_ptr[i + 1];
@@ -114,8 +114,8 @@ SparseMatrix<T>::SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _
     this->resize_cols(rhs.at(0).size());
 
     uint64_t n_nonzero_elem = 0;
-    for (uint32_t i = 0; i < this->get_rows(); ++i) {
-	for (uint32_t j = 0; j < this->get_cols(); ++j) {
+    for (size_t i = 0; i < this->get_rows(); ++i) {
+	for (size_t j = 0; j < this->get_cols(); ++j) {
 	    if (rhs[i][j] != this->zero_val) { // todo: floating point comparisons
 		++n_nonzero_elem;
 	    }
@@ -126,10 +126,10 @@ SparseMatrix<T>::SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _
     this->col_ind.resize(n_nonzero_elem, 0);
     this->vals.resize(n_nonzero_elem, _zero_val);
 
-    uint32_t index = 0;
-    for (uint32_t i = 0; i < this->get_rows(); ++i) {
+    size_t index = 0;
+    for (size_t i = 0; i < this->get_rows(); ++i) {
 	this->row_ptr[i + 1] = this->row_ptr[i];
-	for (uint32_t j = 0; j < this->get_cols(); ++j) {
+	for (size_t j = 0; j < this->get_cols(); ++j) {
 	    if (rhs[i][j] != this->zero_val) { // todo: use std::nextafter for floating point comparisons
 		++this->row_ptr[i + 1];
 		this->col_ind[index] = j;
@@ -142,14 +142,14 @@ SparseMatrix<T>::SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _
 
 // Copy constructor from contiguous 2D vector
 template <typename T>
-SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const uint32_t _rows, const uint32_t _cols, const T& _zero_val) {
+SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val) {
     this->resize_rows(_rows);
     this->resize_cols(_cols);
     this->zero_val = _zero_val;
 
     uint64_t n_nonzero_elem = 0;
-    for (uint32_t i = 0; i < _rows; ++i) {
-	for (uint32_t j = 0; j < _cols; ++j) {
+    for (size_t i = 0; i < _rows; ++i) {
+	for (size_t j = 0; j < _cols; ++j) {
 	    if (!this->nearly_equal(rhs[i*_cols + j], this->zero_val)) {
 		++n_nonzero_elem;
 	    }
@@ -160,10 +160,10 @@ SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const uint32_t _rows, c
     this->col_ind.resize(n_nonzero_elem, 0);
     this->vals.resize(n_nonzero_elem, _zero_val);
 
-    uint32_t index = 0;
-    for (uint32_t i = 0; i < this->get_rows(); ++i) {
+    size_t index = 0;
+    for (size_t i = 0; i < this->get_rows(); ++i) {
 	this->row_ptr[i + 1] = this->row_ptr[i];
-	for (uint32_t j = 0; j < this->get_cols(); ++j) {
+	for (size_t j = 0; j < this->get_cols(); ++j) {
 	    const T &rhs_val = rhs[i*_cols + j];
 	    if (!this->nearly_equal(rhs_val, this->zero_val)) {
 		++this->row_ptr[i + 1];
@@ -177,13 +177,13 @@ SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const uint32_t _rows, c
 
 // Resize a matrix
 template<typename T>
-void SparseMatrix<T>::resize(const uint32_t new_rows, const uint32_t new_cols, const T initial) {
+void SparseMatrix<T>::resize(const size_t new_rows, const size_t new_cols, const T initial) {
     throw std::runtime_error("Resizing a sparse matrix is not supported.");
 }
 
 // Access individual elements
 template <typename T>
-T& SparseMatrix<T>::operator()(uint32_t row, uint32_t col) {
+T& SparseMatrix<T>::operator()(size_t row, size_t col) {
     T* address = this->get_address(row, col);
     if (address == NULL) {
 	return this->zero_val;
@@ -193,12 +193,131 @@ T& SparseMatrix<T>::operator()(uint32_t row, uint32_t col) {
 
 // Access individual elements (const)
 template <typename T>
-const T& SparseMatrix<T>::operator()(uint32_t row, uint32_t col) const {
+const T& SparseMatrix<T>::operator()(size_t row, size_t col) const {
     const T* address = this->get_address(row, col);
     if (address == NULL) {
 	return this->zero_val;
     }
     return *address;
+}
+
+
+// TODO implement sparse matrix operators
+// see https://www.geeksforgeeks.org/operations-sparse-matrices/ for reference
+
+// In-place matrix-matrix addition
+template<typename T>
+SparseMatrix<T>& SparseMatrix<T>::operator+=(const Matrix<T>& rhs) {
+    // seamat::SparseMatrix<T>::operator+=
+    //
+    // Add values from rhs to the calling matrix in-place.
+    //
+    //   Input:
+    //     `rhs`: Matrix to add, must have the same dimensions as the caller.
+    //
+    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    return *this;
+}
+
+// In-place matrix-matrix subtraction
+template<typename T>
+SparseMatrix<T>& SparseMatrix<T>::operator-=(const Matrix<T>& rhs) {
+    // seamat::SparseMatrix<T>::operator-=
+    //
+    // Subtract values of rhs from the calling matrix in-place.
+    //
+    //   Input:
+    //     `rhs`: Matrix to subtract, must have the same dimensions as the caller.
+    //
+    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+
+    return *this;
+}
+
+// In-place right multiplication
+template<typename T>
+SparseMatrix<T>& SparseMatrix<T>::operator*=(const Matrix<T>& rhs) {
+    // seamat::SparseMatrix<T>::operator*=
+    //
+    // Matrix right-multiplication of the caller with rhs in-place.
+    //
+    //   Input:
+    //     `rhs`: Matrix to right multiply with,
+    //            must have the same number of rows as the caller has columns.
+    //
+    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    return *this;
+}
+
+// In-place left multiplication
+template<typename T>
+SparseMatrix<T>& SparseMatrix<T>::operator%=(const Matrix<T>& lhs) {
+    // seamat::SparseMatrix<T>::operator%=
+    //
+    // Matrix left-multiplication of the caller with lhs in-place.
+    //
+    //   Input:
+    //     `lhs`: Matrix to left multiply with,
+    //            must have the same number of columns as the caller has rows.
+    //
+    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    return *this;
+}
+
+// In-place matrix-scalar addition
+template<typename T>
+SparseMatrix<T>& SparseMatrix<T>::operator+=(const T& scalar) {
+    // seamat::SparseMatrix<T>::operator+=
+    //
+    // In-place addition of a scalar to caller.
+    //
+    //   Input:
+    //     `scalar`: Scalar value to add to all caller values.
+    //
+    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    return *this;
+}
+
+// In-place matrix-scalar subtraction
+template<typename T>
+SparseMatrix<T>& SparseMatrix<T>::operator-=(const T& scalar) {
+    // seamat::SparseMatrix<T>::operator-=
+    //
+    // In-place subtraction of a scalar from the caller.
+    //
+    //   Input:
+    //     `scalar`: Scalar value to subtract from all caller values.
+    //
+    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    return *this;
+}
+
+// In-place matrix-scalar multiplication
+template<typename T>
+SparseMatrix<T>& SparseMatrix<T>::operator*=(const T& scalar) {
+    // seamat::SparseMatrix<T>::operator*=
+    //
+    // In-place multiplication of the caller with a scalar.
+    //
+    //   Input:
+    //     `scalar`: Scalar value to multiply all caller values with.
+    //
+    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    return *this;
+}
+
+// In-place matrix-scalar division
+template<typename T>
+SparseMatrix<T>& SparseMatrix<T>::operator/=(const T& scalar) {
+    // seamat::SparseMatrix<T>::operator/=
+    //
+    // In-place division of the caller with a scalar.
+    //
+    //   Input:
+    //     `scalar`: Scalar value to divide all caller values with.
+    //
+    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    return *this;
 }
 }
 

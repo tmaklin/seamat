@@ -197,17 +197,19 @@ public:
 
 template <typename T> class SparseMatrix : public Matrix<T> {
 private:
+    // TODO generic sparse matrix (instead of zero)
+    //
     // Sparse matrix implemented in the compressed row storage (CRS) format.
     // See link below for reference.
     // https://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
     //
     std::vector<T> vals;
-    std::vector<uint32_t> row_ptr;
-    std::vector<uint32_t> col_ind;
+    std::vector<size_t> row_ptr;
+    std::vector<size_t> col_ind;
     T zero_val;
 
-    T* get_address(uint32_t row, uint32_t col);
-    const T* get_address(uint32_t row, uint32_t col) const;
+    T* get_address(size_t row, size_t col);
+    const T* get_address(size_t row, size_t col) const;
 
     bool nearly_equal(double a, double b)
     {
@@ -226,20 +228,36 @@ public:
     SparseMatrix() = default;
     ~SparseMatrix() = default;
     // Parameter constructor
-    SparseMatrix(uint32_t _rows, uint32_t _cols, const T& _initial);
+    SparseMatrix(size_t _rows, size_t _cols, const T& _initial);
     // Initialize from a DenseMatrix
     SparseMatrix(const Matrix<T> &_vals, const T& _zero_val);
     // Initialize from a 2D vector
     SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val);
     // Copy constructor from contiguous 2D vector
-    SparseMatrix(const std::vector<T> &rhs, const uint32_t _rows, const uint32_t _cols, const T& _zero_val);
+    SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val);
 
     // Resize a matrix
-    void resize(const uint32_t new_rows, const uint32_t new_cols, const T initial) override;
+    void resize(const size_t new_rows, const size_t new_cols, const T initial) override;
 
     // Access individual elements
-    T& operator()(uint32_t row, uint32_t col) override;
-    const T& operator()(uint32_t row, uint32_t col) const override;
+    T& operator()(size_t row, size_t col) override;
+    const T& operator()(size_t row, size_t col) const override;
+
+    // Mathematical operators
+    // Matrix-matrix in-place summation and subtraction
+    SparseMatrix<T>& operator+=(const Matrix<T>& rhs) override;
+    SparseMatrix<T>& operator-=(const Matrix<T>& rhs) override;
+
+    // In-place right multiplication
+    SparseMatrix<T>& operator*=(const Matrix<T>& rhs) override;
+    // In-place left multiplication
+    SparseMatrix<T>& operator%=(const Matrix<T>& rhs) override;
+
+    // Matrix-scalar, in-place
+    SparseMatrix<T>& operator+=(const T& rhs) override;
+    SparseMatrix<T>& operator-=(const T& rhs) override;
+    SparseMatrix<T>& operator*=(const T& rhs) override;
+    SparseMatrix<T>& operator/=(const T& rhs) override;
 };
 }
 
