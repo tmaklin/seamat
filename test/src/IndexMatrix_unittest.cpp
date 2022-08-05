@@ -42,8 +42,3 @@ TEST_F(IndexMatrixTest, ValueConstructorFromSparseWorks) {
 	}
     }
 }
-
-TEST_F(IndexMatrixTest, ResizeThrowsRuntimeError) {
-    seamat::IndexMatrix<double, uint32_t> got;
-    EXPECT_THROW(got.resize(this->n_rows, this->n_cols, this->initial_val), std::runtime_error);
-}

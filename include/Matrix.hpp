@@ -46,9 +46,6 @@ public:
     //////
     // Pure virtuals - must override in derived classes.
     ////
-    // Resize a matrix
-    virtual void resize(const size_t new_rows, const size_t new_cols, const T initial) =0;
-
     // Access individual elements
     virtual T& operator()(size_t row, size_t col) =0;
     virtual const T& operator()(size_t row, size_t col) const =0;
@@ -145,7 +142,7 @@ public:
     DenseMatrix<T>& operator=(const Matrix<T>& rhs);
 
    // Resize a matrix
-    void resize(const size_t new_rows, const size_t new_cols, const T initial) override;
+    void resize(const size_t new_rows, const size_t new_cols, const T initial);
 
     // Access individual elements
     T& operator()(size_t row, size_t col) override;
@@ -186,9 +183,6 @@ public:
 
     // Initialize from vals and indices
     IndexMatrix(const Matrix<T> &_vals, const Matrix<U> &_indices, const bool store_as_sparse);
-
-    // Resize a matrix
-    void resize(const size_t new_rows, const size_t new_cols, const T initial) override;
 
     // Access individual elements
     T& operator()(size_t row, size_t col) override;
@@ -239,9 +233,6 @@ public:
     SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val);
     // Copy constructor from contiguous 2D vector
     SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val);
-
-    // Resize a matrix
-    void resize(const size_t new_rows, const size_t new_cols, const T initial) override;
 
     // Access individual elements
     T& operator()(size_t row, size_t col) override;

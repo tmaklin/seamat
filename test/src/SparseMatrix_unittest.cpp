@@ -77,8 +77,3 @@ TEST_F(SparseMatrixTest, AssignmentOperatorWorks) {
 	}
     }    
 }
-
-TEST_F(SparseMatrixTest, ResizeThrowsRuntimeError) {
-    seamat::SparseMatrix<double> got(2, 5, 0.0);
-    EXPECT_THROW(got.resize(this->n_rows, this->n_cols, this->initial_val), std::runtime_error);
-}

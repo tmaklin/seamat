@@ -17,12 +17,6 @@
 #include "openmp_config.hpp"
 
 namespace seamat {
-// Resize a matrix
-template<typename T, typename U>
-void IndexMatrix<T,U>::resize(const size_t new_rows, const size_t new_cols, const T initial) {
-    throw std::runtime_error("Resizing an IndexMatrix is not supported.");
-}
-
 // Access individual elements
 template <typename T, typename U>
 T& IndexMatrix<T,U>::operator()(size_t row, size_t col) {

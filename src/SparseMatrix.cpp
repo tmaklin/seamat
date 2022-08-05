@@ -176,12 +176,6 @@ SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const size_t _rows, con
     }
 }
 
-// Resize a matrix
-template<typename T>
-void SparseMatrix<T>::resize(const size_t new_rows, const size_t new_cols, const T initial) {
-    throw std::runtime_error("Resizing a sparse matrix is not supported.");
-}
-
 // Access individual elements
 template <typename T>
 T& SparseMatrix<T>::operator()(size_t row, size_t col) {
