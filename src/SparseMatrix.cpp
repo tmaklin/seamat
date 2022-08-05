@@ -269,7 +269,12 @@ SparseMatrix<T>& SparseMatrix<T>::operator+=(const T& scalar) {
     //   Input:
     //     `scalar`: Scalar value to add to all caller values.
     //
-    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    this->zero_val += scalar;
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->vals.size(); ++i) {
+	this->vals[i] += scalar;
+    }
+
     return *this;
 }
 
@@ -283,7 +288,12 @@ SparseMatrix<T>& SparseMatrix<T>::operator-=(const T& scalar) {
     //   Input:
     //     `scalar`: Scalar value to subtract from all caller values.
     //
-    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    this->zero_val -= scalar;
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->vals.size(); ++i) {
+	this->vals[i] -= scalar;
+    }
+
     return *this;
 }
 
@@ -297,7 +307,23 @@ SparseMatrix<T>& SparseMatrix<T>::operator*=(const T& scalar) {
     //   Input:
     //     `scalar`: Scalar value to multiply all caller values with.
     //
-    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    // Handle special case where the whole matrix is multiplied by zero and becomes sparse.
+    if (nearly_equal<T>(scalar, (T)0)) {
+	this->vals.clear();
+	this->vals.shrink_to_fit();
+	this->row_ptr.clear();
+	this->row_ptr.shrink_to_fit();
+	this->col_ind.clear();
+	this->col_ind.shrink_to_fit();
+	this->zero_val = (T)0;
+    } else {
+	this->zero_val *= scalar;
+#pragma omp parallel for schedule(static)
+	for (size_t i = 0; i < this->vals.size(); ++i) {
+	    this->vals[i] *= scalar;
+	}
+    }
+
     return *this;
 }
 
@@ -311,7 +337,15 @@ SparseMatrix<T>& SparseMatrix<T>::operator/=(const T& scalar) {
     //   Input:
     //     `scalar`: Scalar value to divide all caller values with.
     //
-    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    if (nearly_equal<T>(scalar, (T)0))
+	throw std::runtime_error("Math error: attempt to divide by zero.");
+
+    this->zero_val /= scalar;
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->vals.size(); ++i) {
+	this->vals[i] /= scalar;
+    }
+
     return *this;
 }
 }

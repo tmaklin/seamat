@@ -15,6 +15,7 @@
 #include <stdexcept>
 
 #include "openmp_config.hpp"
+#include "math_util.hpp"
 
 namespace seamat {
 // Access individual elements
@@ -119,7 +120,13 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator+=(const T& scalar) {
     //   Input:
     //     `scalar`: Scalar value to add to all caller values.
     //
-    throw std::runtime_error("Index matrix operators have not been implemented.");
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->n_rows_vals; ++i) {
+	for (size_t j = 0; j < this->n_cols_vals; ++j) {
+	    this->vals->operator()(i, j) += scalar;
+	}
+    }
+
     return *this;
 }
 
@@ -133,7 +140,13 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator-=(const T& scalar) {
     //   Input:
     //     `scalar`: Scalar value to subtract from all caller values.
     //
-    throw std::runtime_error("Index matrix operators have not been implemented.");
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->n_rows_vals; ++i) {
+	for (size_t j = 0; j < this->n_cols_vals; ++j) {
+	    this->vals->operator()(i, j) -= scalar;
+	}
+    }
+
     return *this;
 }
 
@@ -147,7 +160,13 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator*=(const T& scalar) {
     //   Input:
     //     `scalar`: Scalar value to multiply all caller values with.
     //
-    throw std::runtime_error("Index matrix operators have not been implemented.");
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->n_rows_vals; ++i) {
+	for (size_t j = 0; j < this->n_cols_vals; ++j) {
+	    this->vals->operator()(i, j) *= scalar;
+	}
+    }
+
     return *this;
 }
 
@@ -161,7 +180,16 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator/=(const T& scalar) {
     //   Input:
     //     `scalar`: Scalar value to divide all caller values with.
     //
-    throw std::runtime_error("Index matrix operators have not been implemented.");
+    if (nearly_equal<T>(scalar, (T)0))
+	throw std::runtime_error("Math error: attempt to divide by zero.");
+
+#pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < this->n_rows_vals; ++i) {
+	for (size_t j = 0; j < this->n_cols_vals; ++j) {
+	    this->vals->operator()(i, j) /= scalar;
+	}
+    }
+
     return *this;
 }
 }
