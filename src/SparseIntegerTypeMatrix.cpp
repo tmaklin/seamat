@@ -259,14 +259,14 @@ SparseIntegerTypeMatrix<T>& SparseIntegerTypeMatrix<T>::operator/=(const T& scal
     if (nearly_equal<T>(scalar, (T)0))
 	throw std::runtime_error("Math error: attempt to divide by zero.");
 
-	this->zero_val *= scalar;
-	bm::bvector<>::enumerator en = this->vals.first();
-	bm::bvector<>::enumerator en_end = this->vals.last();
+    this->zero_val *= scalar;
+    bm::bvector<>::enumerator en = this->vals.first();
+    bm::bvector<>::enumerator en_end = this->vals.last();
 
-	while (en < en_end) {
-	    *en /= scalar;
-	    ++en;
-	}
+    while (en < en_end) {
+	*en /= scalar;
+	++en;
+    }
 }
 }
 
