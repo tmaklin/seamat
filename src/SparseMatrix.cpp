@@ -113,6 +113,7 @@ template<typename T>
 SparseMatrix<T>::SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val) {
     this->resize_rows(rhs.size());
     this->resize_cols(rhs.at(0).size());
+    this->zero_val = _zero_val;
 
     uint64_t n_nonzero_elem = 0;
     for (size_t i = 0; i < this->get_rows(); ++i) {
