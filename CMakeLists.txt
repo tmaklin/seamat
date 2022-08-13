@@ -43,6 +43,14 @@ else()
   set(SEAMAT_OPENMP_SUPPORT 0)
 endif()
 
+## BitMagic - supplied with the project
+## BitMagic
+if (DEFINED CMAKE_BITMAGIC_HEADERS)
+  message(STATUS "BitMagic headers provided in: ${CMAKE_BITMAGIC_HEADERS}")
+else()
+  set(CMAKE_BITMAGIC_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/external/BitMagic-7.12.3/src)
+endif()
+
 ## Download googletest if building tests
 if(CMAKE_BUILD_TESTS)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
