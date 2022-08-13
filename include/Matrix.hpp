@@ -7,8 +7,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-#ifndef SEAMAT_DENSE_MATRIX_HPP
-#define SEAMAT_DENSE_MATRIX_HPP
+#ifndef SEAMAT_MATRIX_HPP
+#define SEAMAT_MATRIX_HPP
 
 #include <vector>
 #include <cmath>
@@ -298,11 +298,50 @@ public:
     SparseIntegerTypeMatrix<T>& operator/=(const T& rhs) override;
 };
 
+template <typename T, typename U> class SparseIndexMatrix : public Matrix<T> {
+private:
+    size_t n_rows_vals;
+    size_t n_cols_vals;
+    // Note: assumes that both vals and indices are sparse
+    // For typical use the vals matrix is small enough that sparse/dense *probably* does not matter.
+    // TODO: implement option to use dense vals.
+    SparseMatrix<T> vals;
+    SparseIntegerTypeMatrix<U> indices;
+
+public:
+    SparseIndexMatrix() = default;
+    ~SparseIndexMatrix() = default;
+
+    // Initialize from vals and indices
+    SparseIndexMatrix(const Matrix<T> &_vals, const Matrix<U> &_indices, const bool store_as_sparse);
+
+    // Access individual elements
+    T& operator()(size_t row, size_t col) override;
+    const T& operator()(size_t row, size_t col) const override;
+
+    // Mathematical operators
+    // Matrix-matrix in-place summation and subtraction
+    SparseIndexMatrix<T, U>& operator+=(const Matrix<T>& rhs) override;
+    SparseIndexMatrix<T, U>& operator-=(const Matrix<T>& rhs) override;
+
+    // In-place right multiplication
+    SparseIndexMatrix<T, U>& operator*=(const Matrix<T>& rhs) override;
+    // In-place left multiplication
+    SparseIndexMatrix<T, U>& operator%=(const Matrix<T>& rhs) override;
+
+    // Matrix-scalar, in-place
+    SparseIndexMatrix<T, U>& operator+=(const T& rhs) override;
+    SparseIndexMatrix<T, U>& operator-=(const T& rhs) override;
+    SparseIndexMatrix<T, U>& operator*=(const T& rhs) override;
+    SparseIndexMatrix<T, U>& operator/=(const T& rhs) override;
+
+};
 }
 
 #include "../src/Matrix.cpp"
 #include "../src/DenseMatrix.cpp"
 #include "../src/IndexMatrix.cpp"
+#include "../src/SparseIndexMatrix.cpp"
 #include "../src/SparseMatrix.cpp"
 #include "../src/SparseIntegerTypeMatrix.cpp"
 
