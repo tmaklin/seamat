@@ -9,15 +9,51 @@
 //
 #ifndef SEAMAT_INDEX_MATRIX_CPP
 #define SEAMAT_INDEX_MATRIX_CPP
-#include "Matrix.hpp"
 
 #include <cmath>
 #include <stdexcept>
 
+#include "Matrix.hpp"
 #include "openmp_config.hpp"
 #include "math_util.hpp"
 
 namespace seamat {
+template <typename T, typename U> class IndexMatrix : public Matrix<T> {
+private:
+    size_t n_rows_vals;
+    size_t n_cols_vals;
+    std::unique_ptr<Matrix<T>> vals;
+    std::unique_ptr<Matrix<U>> indices;
+
+public:
+    IndexMatrix() = default;
+    ~IndexMatrix() = default;
+
+    // Initialize from vals and indices
+    IndexMatrix(const Matrix<T> &_vals, const Matrix<U> &_indices, const bool store_as_sparse);
+
+    // Access individual elements
+    T& operator()(size_t row, size_t col) override;
+    const T& operator()(size_t row, size_t col) const override;
+
+    // Mathematical operators
+    // Matrix-matrix in-place summation and subtraction
+    IndexMatrix<T, U>& operator+=(const Matrix<T>& rhs) override;
+    IndexMatrix<T, U>& operator-=(const Matrix<T>& rhs) override;
+
+    // In-place right multiplication
+    IndexMatrix<T, U>& operator*=(const Matrix<T>& rhs) override;
+    // In-place left multiplication
+    IndexMatrix<T, U>& operator%=(const Matrix<T>& rhs) override;
+
+    // Matrix-scalar, in-place
+    IndexMatrix<T, U>& operator+=(const T& rhs) override;
+    IndexMatrix<T, U>& operator-=(const T& rhs) override;
+    IndexMatrix<T, U>& operator*=(const T& rhs) override;
+    IndexMatrix<T, U>& operator/=(const T& rhs) override;
+
+};
+
 // Access individual elements
 template <typename T, typename U>
 T& IndexMatrix<T,U>::operator()(size_t row, size_t col) {

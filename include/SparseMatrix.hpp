@@ -9,15 +9,64 @@
 //
 #ifndef SEAMAT_SPARSE_MATRIX_CPP
 #define SEAMAT_SPARSE_MATRIX_CPP
-#include "Matrix.hpp"
 
 #include <cmath>
 #include <stdexcept>
 
+#include "Matrix.hpp"
 #include "openmp_config.hpp"
 #include "math_util.hpp"
 
 namespace seamat {
+template <typename T> class SparseMatrix : public Matrix<T> {
+private:
+    // TODO generic sparse matrix (instead of zero)
+    //
+    // Sparse matrix implemented in the compressed row storage (CRS) format.
+    // See link below for reference.
+    // https://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
+    //
+    std::vector<T> vals;
+    std::vector<size_t> row_ptr;
+    std::vector<size_t> col_ind;
+    T zero_val;
+
+    T* get_address(size_t row, size_t col);
+    const T* get_address(size_t row, size_t col) const;
+
+public:
+    SparseMatrix() = default;
+    ~SparseMatrix() = default;
+    // Parameter constructor
+    SparseMatrix(size_t _rows, size_t _cols, const T& _initial);
+    // Initialize from a DenseMatrix
+    SparseMatrix(const Matrix<T> &_vals, const T& _zero_val);
+    // Initialize from a 2D vector
+    SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val);
+    // Copy constructor from contiguous 2D vector
+    SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val);
+
+    // Access individual elements
+    T& operator()(size_t row, size_t col) override;
+    const T& operator()(size_t row, size_t col) const override;
+
+    // Mathematical operators
+    // Matrix-matrix in-place summation and subtraction
+    SparseMatrix<T>& operator+=(const Matrix<T>& rhs) override;
+    SparseMatrix<T>& operator-=(const Matrix<T>& rhs) override;
+
+    // In-place right multiplication
+    SparseMatrix<T>& operator*=(const Matrix<T>& rhs) override;
+    // In-place left multiplication
+    SparseMatrix<T>& operator%=(const Matrix<T>& rhs) override;
+
+    // Matrix-scalar, in-place
+    SparseMatrix<T>& operator+=(const T& rhs) override;
+    SparseMatrix<T>& operator-=(const T& rhs) override;
+    SparseMatrix<T>& operator*=(const T& rhs) override;
+    SparseMatrix<T>& operator/=(const T& rhs) override;
+};
+
 template<typename T>
 T* SparseMatrix<T>::get_address(size_t row, size_t col) {
     // Returns the position of element (i, j) in this->vals

@@ -9,15 +9,55 @@
 //
 #ifndef SEAMAT_SPARSE_INTEGER_TYPE_MATRIX_CPP
 #define SEAMAT_SPARSE_INTEGER_TYPE_MATRIX_CPP
-#include "Matrix.hpp"
 
 #include <cmath>
 #include <stdexcept>
 
+#include "Matrix.hpp"
 #include "openmp_config.hpp"
 #include "math_util.hpp"
 
 namespace seamat {
+template <typename T> class SparseIntegerTypeMatrix : public Matrix<T> {
+private:
+    // Specialization of SparseIntegerTypeMatrix for integer types using BitMagic's sparse integer vectors
+    //
+    bm::sparse_vector<T, bm::bvector<>> vals;
+    T zero_val;
+
+public:
+    SparseIntegerTypeMatrix() = default;
+    ~SparseIntegerTypeMatrix() = default;
+    // Parameter constructor
+    SparseIntegerTypeMatrix(size_t _rows, size_t _cols, const T& _initial);
+    // Initialize from a DenseMatrix
+    SparseIntegerTypeMatrix(const Matrix<T> &_vals, const T& _zero_val);
+    // Initialize from a 2D vector
+    SparseIntegerTypeMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val);
+    // Copy constructor from contiguous 2D vector
+    SparseIntegerTypeMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val);
+
+    // Access individual elements
+    T& operator()(size_t row, size_t col) override;
+    const T& operator()(size_t row, size_t col) const override;
+
+    // Mathematical operators
+    // Matrix-matrix in-place summation and subtraction
+    SparseIntegerTypeMatrix<T>& operator+=(const Matrix<T>& rhs) override;
+    SparseIntegerTypeMatrix<T>& operator-=(const Matrix<T>& rhs) override;
+
+    // In-place right multiplication
+    SparseIntegerTypeMatrix<T>& operator*=(const Matrix<T>& rhs) override;
+    // In-place left multiplication
+    SparseIntegerTypeMatrix<T>& operator%=(const Matrix<T>& rhs) override;
+
+    // Matrix-scalar, in-place
+    SparseIntegerTypeMatrix<T>& operator+=(const T& rhs) override;
+    SparseIntegerTypeMatrix<T>& operator-=(const T& rhs) override;
+    SparseIntegerTypeMatrix<T>& operator*=(const T& rhs) override;
+    SparseIntegerTypeMatrix<T>& operator/=(const T& rhs) override;
+};
+
 // Parameter constructor
 template<typename T>
 SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(size_t _rows, size_t _cols, const T& _initial) {
