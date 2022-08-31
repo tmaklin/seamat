@@ -123,6 +123,8 @@ public:
     // Turn an arbitrary matrix into a column sparse matrix
     SparseMatrix<T> sparsify(const T &zero_val) const { return SparseMatrix<T>(this, zero_val); }
 
+    // Log-space right multiplication, store result in arg
+    void exp_right_multiply(const std::vector<T>& rhs, std::vector<T>& result) const;
 };
 // Matrix-matrix addition
 template<typename T>
@@ -558,6 +560,18 @@ DenseMatrix<T> Matrix<T>::transpose() const {
     }
 
     return result;
+}
+
+// log-space Matrix-vector right multiplication, store result in arg
+template<typename T>
+void Matrix<T>::exp_right_multiply(const std::vector<T>& rhs, std::vector<T>& result) const {
+    std::fill(result.begin(), result.end(), 0.0);
+#pragma omp parallel for schedule(static) reduction(vec_double_plus:result)
+    for (size_t i = 0; i < this->rows; i++) {
+	for (size_t j = 0; j < this->cols; j++) {
+	    result[i] += std::exp(this->operator()(i, j) + rhs[j]);
+	}
+    }
 }
 }
 
