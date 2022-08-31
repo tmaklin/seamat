@@ -16,8 +16,8 @@
 #include <cstdint>
 #include <memory>
 
-#include "/home/temaklin/Projects/software/seamat/external/BitMagic-7.12.3/src/bm.h"
-#include "/home/temaklin/Projects/software/seamat/external/BitMagic-7.12.3/src/bmsparsevec.h"
+#include "bm.h"
+#include "bmsparsevec.h"
 
 // Basic matrix structure and operations
 // Implementation was done following the instructions at

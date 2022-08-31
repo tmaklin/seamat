@@ -50,6 +50,7 @@ if (DEFINED CMAKE_BITMAGIC_HEADERS)
 else()
   set(CMAKE_BITMAGIC_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/external/BitMagic-7.12.3/src)
 endif()
+include_directories(${CMAKE_BITMAGIC_HEADERS})
 
 ## Download googletest if building tests
 if(CMAKE_BUILD_TESTS)
