@@ -13,6 +13,9 @@
 #include <cmath>
 #include <stdexcept>
 
+#include "bm.h"
+#include "bmsparsevec.h"
+
 #include "Matrix.hpp"
 #include "openmp_config.hpp"
 #include "math_util.hpp"
@@ -135,20 +138,16 @@ SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const std::vector<T> &rhs, c
 template <typename T>
 T& SparseIntegerTypeMatrix<T>::operator()(size_t row, size_t col) {
     size_t address = row*this->get_cols() + col;
-    if (this->vals[address] != this->zero_val) {
-	return this->vals[address];
-    }
-    return zero_val;
+    const T& out = (this->vals[address] != this->zero_val ? this->vals[address] : this->zero_val);
+    return const_cast<T&>(out);
 }
 
 // Access individual elements
 template <typename T>
 const T& SparseIntegerTypeMatrix<T>::operator()(size_t row, size_t col) const {
     size_t address = row*this->get_cols() + col;
-    if (this->vals[address] != this->zero_val) {
-	return this->vals[address];
-    }
-    return zero_val;
+    const T& out = (this->vals[address] != this->zero_val ? this->vals[address] : this->zero_val);
+    return out;
 }
 
 // TODO implement sparse matrix operators
@@ -223,15 +222,7 @@ SparseIntegerTypeMatrix<T>& SparseIntegerTypeMatrix<T>::operator+=(const T& scal
     //   Input:
     //     `scalar`: Scalar value to add to all caller values.
     //
-    this->zero_val += scalar;
-    bm::bvector<>::enumerator en = this->vals.first();
-    bm::bvector<>::enumerator en_end = this->vals.last();
-
-    while (en < en_end) {
-	*en += scalar;
-	++en;
-    }
-
+    throw std::runtime_error("Sparse matrix operators have not been implemented.");
     return *this;
 }
 
@@ -245,15 +236,7 @@ SparseIntegerTypeMatrix<T>& SparseIntegerTypeMatrix<T>::operator-=(const T& scal
     //   Input:
     //     `scalar`: Scalar value to subtract from all caller values.
     //
-    this->zero_val -= scalar;
-    bm::bvector<>::enumerator en = this->vals.first();
-    bm::bvector<>::enumerator en_end = this->vals.last();
-
-    while (en < en_end) {
-	*en -= scalar;
-	++en;
-    }
-
+    throw std::runtime_error("Sparse matrix operators have not been implemented.");
     return *this;
 }
 
@@ -268,21 +251,7 @@ SparseIntegerTypeMatrix<T>& SparseIntegerTypeMatrix<T>::operator*=(const T& scal
     //     `scalar`: Scalar value to multiply all caller values with.
     //
     // Handle special case where the whole matrix is multiplied by zero and becomes sparse.
-    if (nearly_equal<T>(scalar, (T)0)) {
-	this->vals.clear(true); // Free stored values
-	this->vals.resize((size_t)this->get_rows*this->get_cols);
-	this->zero_val = (T)0;
-    } else {
-	this->zero_val *= scalar;
-	bm::bvector<>::enumerator en = this->vals.first();
-	bm::bvector<>::enumerator en_end = this->vals.last();
-
-	while (en < en_end) {
-	    *en *= scalar;
-	    ++en;
-	}
-    }
-
+    throw std::runtime_error("Sparse matrix operators have not been implemented.");
     return *this;
 }
 
@@ -296,17 +265,8 @@ SparseIntegerTypeMatrix<T>& SparseIntegerTypeMatrix<T>::operator/=(const T& scal
     //   Input:
     //     `scalar`: Scalar value to divide all caller values with.
     //
-    if (nearly_equal<T>(scalar, (T)0))
-	throw std::runtime_error("Math error: attempt to divide by zero.");
-
-    this->zero_val *= scalar;
-    bm::bvector<>::enumerator en = this->vals.first();
-    bm::bvector<>::enumerator en_end = this->vals.last();
-
-    while (en < en_end) {
-	*en /= scalar;
-	++en;
-    }
+    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    return *this;
 }
 }
 
