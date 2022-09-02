@@ -550,12 +550,12 @@ DenseMatrix<T> Matrix<T>::transpose() const {
     //   Output:
     //     `result`: Transpose of the caller as a dense matrix.
     //
-    DenseMatrix<T> result(this->get_rows(), this->get_cols(), (T)0);
+    DenseMatrix<T> result(this->get_cols(), this->get_rows(), (T)0);
 
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < this->get_rows(); ++i) {
 	for (size_t j = 0; j < this->get_cols(); ++j) {
-	    result(i, j) = this->operator()(j, i);
+	    result(j, i) = this->operator()(i, j);
 	}
     }
 
