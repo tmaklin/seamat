@@ -62,6 +62,17 @@ public:
     template <typename V, typename U>
     void sum_fill(const Matrix<V>& rhs1, const Matrix<U>& rhs2);
 
+    void add_row(const std::vector<T> &new_row) {
+#if defined(SEAMAT_CHECK_BOUNDS) && (SEAMAT_CHECK_BOUNDS) == 1
+        if (this->rows != new_row.size()) {
+	    throw std::runtime_error("New row has fewer values than matrx has columns.");
+	}
+#endif
+        for (size_t i = 0; i < new_row.size(); ++i) {
+	  this->mat.emplace_back(new_row[i]);
+	}
+	this->resize_rows(this->get_rows() + 1);
+    }
 };
 
 // Parameter Constructor
