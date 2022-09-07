@@ -45,6 +45,7 @@ public:
     SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val);
     // Copy constructor from contiguous 2D vector
     SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val);
+    SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val, bool transpose);
 
     // Access individual elements
     T& operator()(size_t row, size_t col) override;
@@ -125,36 +126,61 @@ SparseMatrix<T>::SparseMatrix(size_t _rows, size_t _cols, const T& _initial) {
 // Initialize from a DenseMatrix
 template<typename T>
 SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
-    this->resize_rows(_vals.get_rows());
-    this->resize_cols(_vals.get_cols());
+  this->resize_rows(_vals.get_rows());
+  this->resize_cols(_vals.get_cols());
     this->zero_val = _zero_val;
 
-    uint64_t n_nonzero_elem = 0;
+    std::vector<size_t> row_ind;
     for (size_t i = 0; i < _vals.get_rows(); ++i) {
-	for (size_t j = 0; j < _vals.get_cols(); ++j) {
-	    if (!nearly_equal<T>(_vals(i, j), this->zero_val)) {
-		++n_nonzero_elem;
+      for (size_t j = 0; j < _vals.get_cols(); ++j) {
+	  if (!nearly_equal<T>(_vals(i, j), this->zero_val)) {
+	    vals.emplace_back(_vals(i, j));
+		row_ind.emplace_back(i);
+		col_ind.emplace_back(j);
 	    }
 	}
     }
 
-    this->row_ptr.resize(_vals.get_rows() + 1, 0);
-    this->col_ind.resize(n_nonzero_elem, 0);
-    this->vals.resize(n_nonzero_elem, _zero_val);
-
-    size_t index = 0;
-    for (size_t i = 0; i < this->get_rows(); ++i) {
-	this->row_ptr[i + 1] = this->row_ptr[i];
-	for (size_t j = 0; j < this->get_cols(); ++j) {
-	    const T &rhs_val = _vals(i, j);
-	    if (!nearly_equal<T>(rhs_val, this->zero_val)) {
-		++this->row_ptr[i + 1];
-		this->col_ind[index] = j;
-		this->vals[index] = rhs_val;
-		++index;
-	    }
-	}
+    row_ptr.resize(_vals.get_rows() + 1, 0);
+    size_t current_row_id = 0;
+    for (size_t i = 0; i < row_ind.size(); ++i) {
+      if (row_ind[i] != current_row_id) {
+	++current_row_id;
+	row_ptr[current_row_id + 1] = row_ptr[current_row_id];
+      }
+      ++row_ptr[current_row_id + 1];
     }
+      
+    // this->resize_rows(_vals.get_rows());
+    // this->resize_cols(_vals.get_cols());
+    // this->zero_val = _zero_val;
+
+    // uint64_t n_nonzero_elem = 0;
+    // for (size_t i = 0; i < _vals.get_rows(); ++i) {
+    // 	for (size_t j = 0; j < _vals.get_cols(); ++j) {
+    // 	    if (!nearly_equal<T>(_vals(i, j), this->zero_val)) {
+    // 		++n_nonzero_elem;
+    // 	    }
+    // 	}
+    // }
+
+    // this->row_ptr.resize(_vals.get_rows() + 1, 0);
+    // this->col_ind.resize(n_nonzero_elem, 0);
+    // this->vals.resize(n_nonzero_elem, _zero_val);
+
+    // size_t index = 0;
+    // for (size_t i = 0; i < this->get_rows(); ++i) {
+    // 	this->row_ptr[i + 1] = this->row_ptr[i];
+    // 	for (size_t j = 0; j < this->get_cols(); ++j) {
+    // 	    const T &rhs_val = _vals(i, j);
+    // 	    if (!nearly_equal<T>(rhs_val, this->zero_val)) {
+    // 		++this->row_ptr[i + 1];
+    // 		this->col_ind[index] = j;
+    // 		this->vals[index] = rhs_val;
+    // 		++index;
+    // 	    }
+    // 	}
+    // }
 }
 
 // Initialize from a 2D vector
@@ -198,32 +224,101 @@ SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const size_t _rows, con
     this->resize_cols(_cols);
     this->zero_val = _zero_val;
 
-    uint64_t n_nonzero_elem = 0;
+    // TODO wrap with OpenMP support guard and use globals
+    size_t n_threads;
+#pragma omp parallel
+    {
+    n_threads = omp_get_num_threads();
+    }
+
+    std::vector<std::vector<size_t>> my_row_ind(n_threads, std::vector<size_t>());
+    std::vector<std::vector<size_t>> my_col_ind(n_threads, std::vector<size_t>());
+    std::vector<std::vector<T>> my_vals(n_threads, std::vector<T>());
+#pragma omp parallel for schedule(static)
     for (size_t i = 0; i < _rows; ++i) {
-	for (size_t j = 0; j < _cols; ++j) {
-	    if (!nearly_equal<T>(rhs[i*_cols + j], this->zero_val)) {
-		++n_nonzero_elem;
+      size_t rank = omp_get_thread_num(); // TODO wrap for support checking
+      for (size_t j = 0; j < _cols; ++j) {
+	  size_t address = i*_cols + j;
+	    if (!nearly_equal<T>(rhs[address], this->zero_val)) {
+		my_vals[rank].emplace_back(rhs[address]);
+		my_row_ind[rank].emplace_back(i);
+		my_col_ind[rank].emplace_back(j);
 	    }
 	}
     }
 
-    this->row_ptr.resize(_rows + 1, 0);
-    this->col_ind.resize(n_nonzero_elem, 0);
-    this->vals.resize(n_nonzero_elem, _zero_val);
+    vals = std::move(my_vals[0]);
+    col_ind = std::move(my_col_ind[0]);
+    std::vector<size_t> row_ind = std::move(my_row_ind[0]);
+    for (size_t t = 1; t < n_threads; ++t) {
+      vals.insert(vals.end(), std::make_move_iterator(my_vals[t].begin()), std::make_move_iterator(my_vals[t].end()));
+      col_ind.insert(col_ind.end(), std::make_move_iterator(my_col_ind[t].begin()), std::make_move_iterator(my_col_ind[t].end()));
+      row_ind.insert(row_ind.end(), std::make_move_iterator(my_row_ind[t].begin()), std::make_move_iterator(my_row_ind[t].end()));
+    }
 
-    size_t index = 0;
-    for (size_t i = 0; i < this->get_rows(); ++i) {
-	this->row_ptr[i + 1] = this->row_ptr[i];
-	for (size_t j = 0; j < this->get_cols(); ++j) {
-	    const T &rhs_val = rhs[i*_cols + j];
-	    if (!nearly_equal<T>(rhs_val, this->zero_val)) {
-		++this->row_ptr[i + 1];
-		this->col_ind[index] = j;
-		this->vals[index] = rhs_val;
-		++index;
+    row_ptr.resize(_rows + 1, 0);
+    size_t current_row_id = 0;
+    for (size_t i = 0; i < row_ind.size(); ++i) {
+      if (row_ind[i] != current_row_id) {
+	++current_row_id;
+	row_ptr[current_row_id + 1] = row_ptr[current_row_id];
+      }
+      ++row_ptr[current_row_id + 1];
+    }
+}
+
+// Transposing copy constructor from contiguous 2D vector
+template <typename T>
+SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val, bool transpose) {
+  if (transpose) {
+    this->resize_rows(_cols);
+    this->resize_cols(_rows);
+    this->zero_val = _zero_val;
+
+    // TODO wrap with OpenMP support guard and use globals
+    size_t n_threads;
+#pragma omp parallel
+    {
+    n_threads = omp_get_num_threads();
+    }
+
+    std::vector<std::vector<size_t>> my_row_ind(n_threads, std::vector<size_t>());
+    std::vector<std::vector<size_t>> my_col_ind(n_threads, std::vector<size_t>());
+    std::vector<std::vector<T>> my_vals(n_threads, std::vector<T>());
+#pragma omp parallel for schedule(static) num_threads(n_threads)
+    for (size_t j = 0; j < _cols; ++j) {
+      size_t rank = omp_get_thread_num(); // TODO wrap for support checking
+	for (size_t i = 0; i < _rows; ++i) {
+	  size_t address = i*_cols + j;
+	    if (!nearly_equal<T>(rhs[address], this->zero_val)) {
+		my_vals[rank].emplace_back(rhs[address]);
+		my_row_ind[rank].emplace_back(j);
+		my_col_ind[rank].emplace_back(i);
 	    }
 	}
     }
+
+    vals = std::move(my_vals[0]);
+    col_ind = std::move(my_col_ind[0]);
+    std::vector<size_t> row_ind = std::move(my_row_ind[0]);
+    for (size_t t = 1; t < n_threads; ++t) {
+      vals.insert(vals.end(), std::make_move_iterator(my_vals[t].begin()), std::make_move_iterator(my_vals[t].end()));
+      col_ind.insert(col_ind.end(), std::make_move_iterator(my_col_ind[t].begin()), std::make_move_iterator(my_col_ind[t].end()));
+      row_ind.insert(row_ind.end(), std::make_move_iterator(my_row_ind[t].begin()), std::make_move_iterator(my_row_ind[t].end()));
+    }
+
+    row_ptr.resize(_rows + 1, 0);
+    size_t current_row_id = 0;
+    for (size_t i = 0; i < row_ind.size(); ++i) {
+      if (row_ind[i] != current_row_id) {
+	++current_row_id;
+	row_ptr[current_row_id + 1] = row_ptr[current_row_id];
+      }
+      ++row_ptr[current_row_id + 1];
+    }
+  } else {
+    (*this) = SparseMatrix<T>(rhs, _rows, _cols, _zero_val);
+  }
 }
 
 // Access individual elements
