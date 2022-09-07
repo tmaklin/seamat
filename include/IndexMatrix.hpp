@@ -14,6 +14,7 @@
 #include <stdexcept>
 
 #include "Matrix.hpp"
+#include "SparseIntegerTypeMatrix.hpp"
 #include "openmp_config.hpp"
 #include "math_util.hpp"
 
@@ -22,8 +23,8 @@ template <typename T, typename U> class IndexMatrix : public Matrix<T> {
 private:
     size_t n_rows_vals;
     size_t n_cols_vals;
-    std::unique_ptr<Matrix<T>> vals;
-    std::unique_ptr<Matrix<U>> indices;
+    SparseMatrix<T> vals;
+    SparseMatrix<U> indices;
 
 public:
     IndexMatrix() = default;
@@ -31,6 +32,15 @@ public:
 
     // Initialize from vals and indices
     IndexMatrix(const Matrix<T> &_vals, const Matrix<U> &_indices, const bool store_as_sparse);
+
+  IndexMatrix(const Matrix<T> &_vals, const std::vector<U> &_indices, size_t _n_rows, size_t _n_cols) {
+    this->vals = SparseMatrix<T>(_vals, -4.60517);
+    this->indices = SparseMatrix<U>(_indices, _n_rows, _n_cols, (U)0);
+    this->resize_rows(_n_rows);
+    this->resize_cols(_n_cols);
+    this->n_rows_vals = _vals.get_rows();
+    this->n_cols_vals = _vals.get_cols();
+  }
 
     // Access individual elements
     T& operator()(size_t row, size_t col) override;
@@ -57,15 +67,15 @@ public:
 // Access individual elements
 template <typename T, typename U>
 T& IndexMatrix<T,U>::operator()(size_t row, size_t col) {
-    size_t out_col = (*this->indices)(row, col);
-    return (*this->vals)(row, out_col);
+    size_t out_col = this->indices(row, col);
+    return this->vals(row, out_col);
 }
 
 // Access individual elements (const)
 template <typename T, typename U>
 const T& IndexMatrix<T,U>::operator()(size_t row, size_t col) const {
-    size_t out_col = (*this->indices)(row, col);
-    return (*this->vals)(row, out_col);
+    size_t out_col = this->indices(row, col);
+    return this->vals(row, out_col);
 }
 
 // Initialize from vals and indices
@@ -159,7 +169,7 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator+=(const T& scalar) {
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < this->n_rows_vals; ++i) {
 	for (size_t j = 0; j < this->n_cols_vals; ++j) {
-	    this->vals->operator()(i, j) += scalar;
+	    this->vals(i, j) += scalar;
 	}
     }
 
@@ -179,7 +189,7 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator-=(const T& scalar) {
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < this->n_rows_vals; ++i) {
 	for (size_t j = 0; j < this->n_cols_vals; ++j) {
-	    this->vals->operator()(i, j) -= scalar;
+	    this->vals(i, j) -= scalar;
 	}
     }
 
@@ -199,7 +209,7 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator*=(const T& scalar) {
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < this->n_rows_vals; ++i) {
 	for (size_t j = 0; j < this->n_cols_vals; ++j) {
-	    this->vals->operator()(i, j) *= scalar;
+	    this->vals(i, j) *= scalar;
 	}
     }
 
@@ -222,7 +232,7 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator/=(const T& scalar) {
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < this->n_rows_vals; ++i) {
 	for (size_t j = 0; j < this->n_cols_vals; ++j) {
-	    this->vals->operator()(i, j) /= scalar;
+	    this->vals(i, j) /= scalar;
 	}
     }
 
