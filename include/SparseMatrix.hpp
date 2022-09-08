@@ -122,6 +122,7 @@ void SparseMatrix<T>::coo_insert(const T& _val, const size_t row, const size_t c
 
 template <typename T>
 void SparseMatrix<T>::row_ind_to_row_ptr(const std::vector<size_t> &row_ind) {
+    this->row_ptr.clear(); // Clear the row_ptr just in case.
     this->row_ptr.resize(this->get_rows() + 1, 0);
     size_t current_row_id = 0;
     for (size_t i = 0; i < row_ind.size(); ++i) {
