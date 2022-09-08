@@ -31,11 +31,20 @@ public:
     DenseMatrix(const std::vector<std::vector<T>> &rhs);
     // Copy constructor from another matrix
     DenseMatrix(const Matrix<T> &rhs);
+    // Copy constructor
+    DenseMatrix(const DenseMatrix<T>& rhs);
+    // Move constructor
+    DenseMatrix(DenseMatrix<T>&& rhs);
 
-    // Assignment operator
+    // Assignment operators
     DenseMatrix<T>& operator=(const Matrix<T>& rhs);
+    // Copy assignment operator
+    DenseMatrix<T>& operator=(const DenseMatrix<T>& rhs);
 
-   // Resize a matrix
+    // Move assignment operator
+    DenseMatrix<T>& operator=(DenseMatrix<T>&& rhs);
+
+    // Resize a matrix
     void resize(const size_t new_rows, const size_t new_cols, const T initial);
 
     // Access individual elements
@@ -86,7 +95,7 @@ DenseMatrix<T>::DenseMatrix(size_t _rows, size_t _cols, const T& _initial) {
 // Copy constructor from contiguous 2D vector
 template <typename T>
 DenseMatrix<T>::DenseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols) {
-    mat = rhs;
+    mat = std::move(rhs);
     this->resize_rows(_rows);
     this->resize_cols(_cols);
 }
@@ -118,6 +127,27 @@ DenseMatrix<T>::DenseMatrix(const Matrix<T> &rhs) {
 	}
     }
 }
+// Copy constructor
+template<typename T>
+DenseMatrix<T>::DenseMatrix(const DenseMatrix<T>& rhs) {
+    size_t new_rows = rhs.get_rows();
+    size_t new_cols = rhs.get_cols();
+
+    this->mat = rhs.mat;
+    this->resize_rows(new_rows);
+    this->resize_cols(new_cols);
+}
+
+// Move constructor
+template<typename T>
+DenseMatrix<T>::DenseMatrix(DenseMatrix<T>&& rhs) {
+    size_t new_rows = rhs.get_rows();
+    size_t new_cols = rhs.get_cols();
+
+    this->mat = std::move(rhs.mat);
+    this->resize_rows(new_rows);
+    this->resize_cols(new_cols);
+}
 
 // Assignment Operator
 template<typename T>
@@ -127,15 +157,49 @@ DenseMatrix<T>& DenseMatrix<T>::operator=(const Matrix<T>& rhs) {
 
     size_t new_rows = rhs.get_rows();
     size_t new_cols = rhs.get_cols();
-    if (new_rows != this->get_rows() || new_cols != this->get_cols()) {
-	resize(new_rows, new_cols, (T)0);
-    }
+
+    this->mat = std::vector<T>((size_t)(new_rows*new_cols));
+    this->resize_rows(new_rows);
+    this->resize_cols(new_cols);
+
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < new_rows; i++) {
 	for (size_t j = 0; j < new_cols; j++) {
 	    this->operator()(i, j) = rhs(i, j);
 	}
     }
+    return *this;
+}
+
+// Copy assignment operator
+template<typename T>
+DenseMatrix<T>& DenseMatrix<T>::operator=(const DenseMatrix<T>& rhs) {
+    if (&rhs == this)
+	return *this;
+
+    size_t new_rows = rhs.get_rows();
+    size_t new_cols = rhs.get_cols();
+
+    this->mat = rhs.mat;
+    this->resize_rows(new_rows);
+    this->resize_cols(new_cols);
+
+    return *this;
+}
+
+// Move assignment operator
+template<typename T>
+DenseMatrix<T>& DenseMatrix<T>::operator=(DenseMatrix<T>&& rhs) {
+    if (&rhs == this)
+	return *this;
+
+    size_t new_rows = rhs.get_rows();
+    size_t new_cols = rhs.get_cols();
+
+    this->mat = std::move(rhs.mat);
+    this->resize_rows(new_rows);
+    this->resize_cols(new_cols);
+
     return *this;
 }
 
