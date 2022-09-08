@@ -307,7 +307,7 @@ const T& SparseMatrix<T>::operator()(size_t row, size_t col) const {
 // TODO implement sparse matrix operators
 // see https://www.geeksforgeeks.org/operations-sparse-matrices/ for reference
 
-// In-place matrix-matrix addition
+// In-place SparseMatrix-SparseMatrix addition
 template<typename T>
 SparseMatrix<T>& SparseMatrix<T>::operator+=(const Matrix<T>& rhs) {
     // seamat::SparseMatrix<T>::operator+=
@@ -316,8 +316,36 @@ SparseMatrix<T>& SparseMatrix<T>::operator+=(const Matrix<T>& rhs) {
     //
     //   Input:
     //     `rhs`: Matrix to add, must have the same dimensions as the caller.
+    //   TODO:
+    //     tests
     //
-    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    std::vector<T> new_vals;
+    std::vector<size_t> new_row_ind;
+    std::vector<size_t> new_col_ind;
+
+    for (size_t i = 0; i < this->get_rows(); ++i) {
+	for (size_t j = 0; j < this->get_cols(); ++j) {
+	    T new_val;
+	    bool lhs_is_zero = nearly_equal<T>(this->operator()(i, j), this->zero_val);
+	    bool rhs_is_zero = nearly_equal<T>(rhs(i, j), this->zero_val);
+	    if (!lhs_is_zero && !rhs_is_zero) {
+		new_val = this->operator()(i, j) + rhs(i, j);
+	    } else if (!rhs_is_zero) {
+		new_val = rhs(i, j);
+	    } else {
+		new_val = this->operator()(i, j);
+	    }
+	    if (!lhs_is_zero || !rhs_is_zero) {
+		new_vals.emplace_back(new_val);
+		new_row_ind.emplace_back(i);
+		new_col_ind.emplace_back(j);
+	    }
+	}
+    }
+    this->vals = std::move(new_vals);
+    this->col_ind = std::move(new_col_ind);
+    this->row_ind_to_row_ptr(new_row_ind);
+
     return *this;
 }
 
@@ -331,7 +359,35 @@ SparseMatrix<T>& SparseMatrix<T>::operator-=(const Matrix<T>& rhs) {
     //   Input:
     //     `rhs`: Matrix to subtract, must have the same dimensions as the caller.
     //
-    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    //   TODO:
+    //     tests
+    //
+    std::vector<T> new_vals;
+    std::vector<size_t> new_row_ind;
+    std::vector<size_t> new_col_ind;
+
+    for (size_t i = 0; i < this->get_rows(); ++i) {
+	for (size_t j = 0; j < this->get_cols(); ++j) {
+	    T new_val;
+	    bool lhs_is_zero = nearly_equal<T>(this->operator()(i, j), this->zero_val);
+	    bool rhs_is_zero = nearly_equal<T>(rhs(i, j), this->zero_val);
+	    if (!lhs_is_zero && !rhs_is_zero) {
+		new_val = this->operator()(i, j) - rhs(i, j);
+	    } else if (!rhs_is_zero) {
+		new_val = -rhs(i, j);
+	    } else {
+		new_val = this->operator()(i, j);
+	    }
+	    if (!lhs_is_zero || !rhs_is_zero) {
+		new_vals.emplace_back(new_val);
+		new_row_ind.emplace_back(i);
+		new_col_ind.emplace_back(j);
+	    }
+	}
+    }
+    this->vals = std::move(new_vals);
+    this->col_ind = std::move(new_col_ind);
+    this->row_ind_to_row_ptr(new_row_ind);
 
     return *this;
 }
@@ -347,7 +403,8 @@ SparseMatrix<T>& SparseMatrix<T>::operator*=(const Matrix<T>& rhs) {
     //     `rhs`: Matrix to right multiply with,
     //            must have the same number of rows as the caller has columns.
     //
-    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    throw std::runtime_error("SparseMatrix-Matrix in-place multiplication is not implemented.");
+
     return *this;
 }
 
@@ -362,7 +419,8 @@ SparseMatrix<T>& SparseMatrix<T>::operator%=(const Matrix<T>& lhs) {
     //     `lhs`: Matrix to left multiply with,
     //            must have the same number of columns as the caller has rows.
     //
-    throw std::runtime_error("Sparse matrix operators have not been implemented.");
+    throw std::runtime_error("Matrix-SparseMatrix in-place multiplication is not implemented.");
+
     return *this;
 }
 
