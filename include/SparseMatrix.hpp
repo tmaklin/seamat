@@ -20,8 +20,6 @@
 namespace seamat {
 template <typename T> class SparseMatrix : public Matrix<T> {
 private:
-    // TODO generic sparse matrix (instead of zero)
-    //
     // Sparse matrix implemented in the compressed row storage (CRS) format.
     // See link below for reference.
     // https://netlib.org/linalg/html_templates/node91.html#SECTION00931100000000000000
@@ -31,21 +29,32 @@ private:
     std::vector<size_t> col_ind;
     T zero_val;
 
+    // Internal helper functions
+    //
+    // Get pointer to an element
     T* get_address(size_t row, size_t col);
     const T* get_address(size_t row, size_t col) const;
+    // For constructors:
+    // Insert a value to the COO list if it's not a zero
+    void coo_insert(const T& _val, const size_t row, const size_t col, std::vector<size_t> *row_ind);
+    void row_ind_to_row_ptr(const std::vector<size_t> &row_ind);
 
 public:
     SparseMatrix() = default;
     ~SparseMatrix() = default;
-    // Parameter constructor
-    SparseMatrix(size_t _rows, size_t _cols, const T& _initial);
-    // Initialize from a DenseMatrix
+
+    // Parameter constructor, initialize an empty SparseMatrix
+    SparseMatrix(const size_t _rows, const size_t _cols, const T _zero_val);
+
+    // Constructors from existing objects, these use the coordinate list (COO)
+    // format internally to build the matrix and then convert back to CRS.
+    //
+    // Construct from another matrix object
     SparseMatrix(const Matrix<T> &_vals, const T& _zero_val);
-    // Initialize from a 2D vector
+    // Construct from a 2D vector (vector of vectors)
     SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val);
-    // Copy constructor from contiguous 2D vector
+    // Construct from a contiguously stored 2D vector (vector with known dimensions)
     SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val);
-    SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val, bool transpose);
 
     // Access individual elements
     T& operator()(size_t row, size_t col) override;
@@ -102,223 +111,175 @@ const T* SparseMatrix<T>::get_address(size_t row, size_t col) const {
     return NULL;
 }
 
-// Parameter constructor
-template<typename T>
-SparseMatrix<T>::SparseMatrix(size_t _rows, size_t _cols, const T& _initial) {
-    // Initializes a dense SparseMatrix; use
-    // SparseMatrix<T>::remove_nonzeros to sparsify the matrix after
-    // filling it.
-    this->resize_rows(_rows);
-    this->resize_cols(_cols);
-
-    uint64_t n_elements = _rows*_cols;
-    this->vals = std::vector<T>(n_elements, _initial);
-    this->col_ind.resize(n_elements, 0);
-    this->row_ptr.resize(_rows, 0);
-    for (size_t i = 0; i < _rows; ++i) {
-	this->row_ptr[i + 1] = this->row_ptr[i] + _cols;
-	for (size_t j = 0; j < _cols; ++j) {
-	    this->col_ind[i*_cols + j] = j;
-	}
+template <typename T>
+void SparseMatrix<T>::coo_insert(const T& _val, const size_t row, const size_t col, std::vector<size_t> *row_ind) {
+    if (!nearly_equal<T>(_val, this->zero_val)) {
+	this->vals.emplace_back(_val);
+	row_ind->emplace_back(row);
+	this->col_ind.emplace_back(col);
     }
 }
-    
-// Initialize from a DenseMatrix
+
+template <typename T>
+void SparseMatrix<T>::row_ind_to_row_ptr(const std::vector<size_t> &row_ind) {
+    this->row_ptr.resize(this->get_rows() + 1, 0);
+    size_t current_row_id = 0;
+    for (size_t i = 0; i < row_ind.size(); ++i) {
+      if (row_ind[i] != current_row_id) {
+	++current_row_id;
+	row_ptr[current_row_id + 1] = row_ptr[current_row_id];
+      }
+      ++row_ptr[current_row_id + 1];
+    }
+}
+
+
+// Parameter constructor, initialize an empty SparseMatrix
+template<typename T>
+SparseMatrix<T>::SparseMatrix(const size_t _rows, const size_t _cols, const T _zero_val) {
+    // Initializes an empty SparseMatrix (ie filled with _zero_val).
+    // Input:
+    //   _rows: Number of rows in the matrix.
+    //   _col: Number of cols in the matrix.
+    //   _zero_val: The "zero-value" to return when the matrix does
+    //              not contain an inserted value at the position.
+    //
+    this->resize_rows(_rows);
+    this->resize_cols(_cols);
+    this->zero_val = _zero_val;
+
+    this->vals = std::vector<T>(0, _zero_val);
+    this->col_ind.resize(0, 0);
+    this->row_ptr.resize(_rows + 1, 0); // _rows but they contain no elements
+}
+
+// Construct from another matrix object
 template<typename T>
 SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
-  this->resize_rows(_vals.get_rows());
-  this->resize_cols(_vals.get_cols());
-    this->zero_val = _zero_val;
+    // Initializes a SparseMatrix containing the values in the input Matrix
+    // Input:
+    //   _vals: an arbitrary Matrix<T> object that supports operator() for accessing values.
+    //   _zero_val: which value to consider as the "zero" in _vals.
+    //
+    size_t _rows = _vals.get_rows();
+    size_t _cols = _vals.get_cols();
 
-    std::vector<size_t> row_ind;
-    for (size_t i = 0; i < _vals.get_rows(); ++i) {
-      for (size_t j = 0; j < _vals.get_cols(); ++j) {
-	  if (!nearly_equal<T>(_vals(i, j), this->zero_val)) {
-	    vals.emplace_back(_vals(i, j));
-		row_ind.emplace_back(i);
-		col_ind.emplace_back(j);
-	    }
-	}
-    }
-
-    row_ptr.resize(_vals.get_rows() + 1, 0);
-    size_t current_row_id = 0;
-    for (size_t i = 0; i < row_ind.size(); ++i) {
-      if (row_ind[i] != current_row_id) {
-	++current_row_id;
-	row_ptr[current_row_id + 1] = row_ptr[current_row_id];
-      }
-      ++row_ptr[current_row_id + 1];
-    }
-      
-    // this->resize_rows(_vals.get_rows());
-    // this->resize_cols(_vals.get_cols());
-    // this->zero_val = _zero_val;
-
-    // uint64_t n_nonzero_elem = 0;
-    // for (size_t i = 0; i < _vals.get_rows(); ++i) {
-    // 	for (size_t j = 0; j < _vals.get_cols(); ++j) {
-    // 	    if (!nearly_equal<T>(_vals(i, j), this->zero_val)) {
-    // 		++n_nonzero_elem;
-    // 	    }
-    // 	}
-    // }
-
-    // this->row_ptr.resize(_vals.get_rows() + 1, 0);
-    // this->col_ind.resize(n_nonzero_elem, 0);
-    // this->vals.resize(n_nonzero_elem, _zero_val);
-
-    // size_t index = 0;
-    // for (size_t i = 0; i < this->get_rows(); ++i) {
-    // 	this->row_ptr[i + 1] = this->row_ptr[i];
-    // 	for (size_t j = 0; j < this->get_cols(); ++j) {
-    // 	    const T &rhs_val = _vals(i, j);
-    // 	    if (!nearly_equal<T>(rhs_val, this->zero_val)) {
-    // 		++this->row_ptr[i + 1];
-    // 		this->col_ind[index] = j;
-    // 		this->vals[index] = rhs_val;
-    // 		++index;
-    // 	    }
-    // 	}
-    // }
-}
-
-// Initialize from a 2D vector
-template<typename T>
-SparseMatrix<T>::SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val) {
-    this->resize_rows(rhs.size());
-    this->resize_cols(rhs.at(0).size());
-    this->zero_val = _zero_val;
-
-    uint64_t n_nonzero_elem = 0;
-    for (size_t i = 0; i < this->get_rows(); ++i) {
-	for (size_t j = 0; j < this->get_cols(); ++j) {
-	    if (rhs[i][j] != this->zero_val) { // todo: floating point comparisons
-		++n_nonzero_elem;
-	    }
-	}
-    }
-
-    this->row_ptr.resize(this->get_rows() + 1, 0);
-    this->col_ind.resize(n_nonzero_elem, 0);
-    this->vals.resize(n_nonzero_elem, _zero_val);
-
-    size_t index = 0;
-    for (size_t i = 0; i < this->get_rows(); ++i) {
-	this->row_ptr[i + 1] = this->row_ptr[i];
-	for (size_t j = 0; j < this->get_cols(); ++j) {
-	    if (rhs[i][j] != this->zero_val) { // todo: use std::nextafter for floating point comparisons
-		++this->row_ptr[i + 1];
-		this->col_ind[index] = j;
-		this->vals[index] = rhs[i][j];
-		++index;
-	    }
-	}
-    }
-}
-
-// Copy constructor from contiguous 2D vector
-template <typename T>
-SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val) {
     this->resize_rows(_rows);
     this->resize_cols(_cols);
     this->zero_val = _zero_val;
 
-    // TODO wrap with OpenMP support guard and use globals
-    size_t n_threads;
-#pragma omp parallel
-    {
-    n_threads = omp_get_num_threads();
-    }
-
-    std::vector<std::vector<size_t>> my_row_ind(n_threads, std::vector<size_t>());
-    std::vector<std::vector<size_t>> my_col_ind(n_threads, std::vector<size_t>());
-    std::vector<std::vector<T>> my_vals(n_threads, std::vector<T>());
-#pragma omp parallel for schedule(static)
+    // Construct in COO format
+    std::vector<size_t> row_ind; // Temporary for storing the row indices
     for (size_t i = 0; i < _rows; ++i) {
-      size_t rank = omp_get_thread_num(); // TODO wrap for support checking
-      for (size_t j = 0; j < _cols; ++j) {
-	  size_t address = i*_cols + j;
-	    if (!nearly_equal<T>(rhs[address], this->zero_val)) {
-		my_vals[rank].emplace_back(rhs[address]);
-		my_row_ind[rank].emplace_back(i);
-		my_col_ind[rank].emplace_back(j);
-	    }
+	for (size_t j = 0; j < _cols; ++j) {
+	    this->coo_insert(_vals(i, j), i, j, &row_ind);
 	}
     }
 
-    vals = std::move(my_vals[0]);
-    col_ind = std::move(my_col_ind[0]);
-    std::vector<size_t> row_ind = std::move(my_row_ind[0]);
-    for (size_t t = 1; t < n_threads; ++t) {
-      vals.insert(vals.end(), std::make_move_iterator(my_vals[t].begin()), std::make_move_iterator(my_vals[t].end()));
-      col_ind.insert(col_ind.end(), std::make_move_iterator(my_col_ind[t].begin()), std::make_move_iterator(my_col_ind[t].end()));
-      row_ind.insert(row_ind.end(), std::make_move_iterator(my_row_ind[t].begin()), std::make_move_iterator(my_row_ind[t].end()));
-    }
-
-    row_ptr.resize(_rows + 1, 0);
-    size_t current_row_id = 0;
-    for (size_t i = 0; i < row_ind.size(); ++i) {
-      if (row_ind[i] != current_row_id) {
-	++current_row_id;
-	row_ptr[current_row_id + 1] = row_ptr[current_row_id];
-      }
-      ++row_ptr[current_row_id + 1];
-    }
+    // Convert to CRS format by creating the row_ptr vector
+    this->row_ind_to_row_ptr(row_ind);
 }
 
-// Transposing copy constructor from contiguous 2D vector
-template <typename T>
-SparseMatrix<T>::SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val, bool transpose) {
-  if (transpose) {
-    this->resize_rows(_cols);
-    this->resize_cols(_rows);
+// Construct from a 2D vector (vector of vectors)
+template<typename T>
+SparseMatrix<T>::SparseMatrix(const std::vector<std::vector<T>> &_vals, const T& _zero_val) {
+    // Initializes a SparseMatrix containing the values in the input 2D vector
+    // Input:
+    //   _vals: a 2D vector containing the values (first dimension rows, second cols).
+    //   _zero_val: which value to consider as the "zero" in _vals.
+    // TODO:
+    //   - Implement bounds checking (see DenseMatrix.hpp for how-to).
+    //
+    size_t _rows = _vals.size();
+    size_t _cols = _vals.at(0).size(); // Use at() here to throw a descriptive error message if _vals is uninitialized
+
+    this->resize_rows(_rows);
+    this->resize_cols(_cols);
     this->zero_val = _zero_val;
 
-    // TODO wrap with OpenMP support guard and use globals
-    size_t n_threads;
-#pragma omp parallel
-    {
-    n_threads = omp_get_num_threads();
-    }
-
-    std::vector<std::vector<size_t>> my_row_ind(n_threads, std::vector<size_t>());
-    std::vector<std::vector<size_t>> my_col_ind(n_threads, std::vector<size_t>());
-    std::vector<std::vector<T>> my_vals(n_threads, std::vector<T>());
-#pragma omp parallel for schedule(static) num_threads(n_threads)
-    for (size_t j = 0; j < _cols; ++j) {
-      size_t rank = omp_get_thread_num(); // TODO wrap for support checking
-	for (size_t i = 0; i < _rows; ++i) {
-	  size_t address = i*_cols + j;
-	    if (!nearly_equal<T>(rhs[address], this->zero_val)) {
-		my_vals[rank].emplace_back(rhs[address]);
-		my_row_ind[rank].emplace_back(j);
-		my_col_ind[rank].emplace_back(i);
-	    }
+    // Construct in COO format
+    std::vector<size_t> row_ind; // Temporary for storing the row indices
+    for (size_t i = 0; i < _rows; ++i) {
+	for (size_t j = 0; j < _cols; ++j) {
+	    this->coo_insert(_vals[i][j], i, j, &row_ind); // Use [][] and don't check bounds (faster).
 	}
     }
 
-    vals = std::move(my_vals[0]);
-    col_ind = std::move(my_col_ind[0]);
-    std::vector<size_t> row_ind = std::move(my_row_ind[0]);
-    for (size_t t = 1; t < n_threads; ++t) {
-      vals.insert(vals.end(), std::make_move_iterator(my_vals[t].begin()), std::make_move_iterator(my_vals[t].end()));
-      col_ind.insert(col_ind.end(), std::make_move_iterator(my_col_ind[t].begin()), std::make_move_iterator(my_col_ind[t].end()));
-      row_ind.insert(row_ind.end(), std::make_move_iterator(my_row_ind[t].begin()), std::make_move_iterator(my_row_ind[t].end()));
+    // Convert to CRS format by creating the row_ptr vector
+    this->row_ind_to_row_ptr(row_ind);
+}
+
+// Construct from a contiguously stored 2D vector (vector with known dimensions)
+template <typename T>
+SparseMatrix<T>::SparseMatrix(const std::vector<T> &_vals, const size_t _rows, const size_t _cols, const T& _zero_val) {
+    // Initializes a SparseMatrix containing the values in the input vector
+    // Input:
+    //   _vals: a _rows*_cols vector containing the values.
+    //   _rows: number of rows in the contiguously stored 2D object.
+    //   _cols: number of columns in the 2D object.
+    //   _zero_val: which value to consider as the "zero" in _vals.
+    // TODO:
+    //   - Implement bounds checking (see DenseMatrix.hpp for how-to).
+    //   - Check if the parallel implementation is faster.
+    //
+    this->resize_rows(_rows);
+    this->resize_cols(_cols);
+    this->zero_val = _zero_val;
+
+    // Construct in COO format
+    std::vector<size_t> row_ind; // Temporary for storing the row indices
+    for (size_t i = 0; i < _rows; ++i) {
+	for (size_t j = 0; j < _cols; ++j) {
+	    size_t address = i*_cols + j;
+	    this->coo_insert(_vals[address], i, j, &row_ind); // Use [] and don't check bounds (faster).
+	}
     }
 
-    row_ptr.resize(_rows + 1, 0);
-    size_t current_row_id = 0;
-    for (size_t i = 0; i < row_ind.size(); ++i) {
-      if (row_ind[i] != current_row_id) {
-	++current_row_id;
-	row_ptr[current_row_id + 1] = row_ptr[current_row_id];
-      }
-      ++row_ptr[current_row_id + 1];
-    }
-  } else {
-    (*this) = SparseMatrix<T>(rhs, _rows, _cols, _zero_val);
-  }
+    // Convert to CRS format by creating the row_ptr vector
+    this->row_ind_to_row_ptr(row_ind);
+
+    // Parallel implementation below, TODO test if its faster.
+    //     // TODO wrap with OpenMP support guard and use globals
+    //     size_t n_threads;
+    // #pragma omp parallel
+    //     {
+    //     n_threads = omp_get_num_threads();
+    //     }
+
+    //     std::vector<std::vector<size_t>> my_row_ind(n_threads, std::vector<size_t>());
+    //     std::vector<std::vector<size_t>> my_col_ind(n_threads, std::vector<size_t>());
+    //     std::vector<std::vector<T>> my_vals(n_threads, std::vector<T>());
+    // #pragma omp parallel for schedule(static)
+    //     for (size_t i = 0; i < _rows; ++i) {
+    //       size_t rank = omp_get_thread_num(); // TODO wrap for support checking
+    //       for (size_t j = 0; j < _cols; ++j) {
+    // 	  size_t address = i*_cols + j;
+    // 	    if (!nearly_equal<T>(rhs[address], this->zero_val)) {
+    // 		my_vals[rank].emplace_back(rhs[address]);
+    // 		my_row_ind[rank].emplace_back(i);
+    // 		my_col_ind[rank].emplace_back(j);
+    // 	    }
+    // 	}
+    //     }
+
+    //     vals = std::move(my_vals[0]);
+    //     col_ind = std::move(my_col_ind[0]);
+    //     std::vector<size_t> row_ind = std::move(my_row_ind[0]);
+    //     for (size_t t = 1; t < n_threads; ++t) {
+    //       vals.insert(vals.end(), std::make_move_iterator(my_vals[t].begin()), std::make_move_iterator(my_vals[t].end()));
+    //       col_ind.insert(col_ind.end(), std::make_move_iterator(my_col_ind[t].begin()), std::make_move_iterator(my_col_ind[t].end()));
+    //       row_ind.insert(row_ind.end(), std::make_move_iterator(my_row_ind[t].begin()), std::make_move_iterator(my_row_ind[t].end()));
+    //     }
+
+    //     row_ptr.resize(_rows + 1, 0);
+    //     size_t current_row_id = 0;
+    //     for (size_t i = 0; i < row_ind.size(); ++i) {
+    //       if (row_ind[i] != current_row_id) {
+    // 	++current_row_id;
+    // 	row_ptr[current_row_id + 1] = row_ptr[current_row_id];
+    //       }
+    //       ++row_ptr[current_row_id + 1];
+    //     }
 }
 
 // Access individual elements
@@ -456,8 +417,8 @@ SparseMatrix<T>& SparseMatrix<T>::operator*=(const T& scalar) {
     if (nearly_equal<T>(scalar, (T)0)) {
 	this->vals.clear();
 	this->vals.shrink_to_fit();
-	this->row_ptr.clear();
-	this->row_ptr.shrink_to_fit();
+	this->row_ptr.clear(); // Remove contents
+	this->row_ptr.resize(this->get_rows() + 1, 0); // This matrix now contains zero non-zero elements.
 	this->col_ind.clear();
 	this->col_ind.shrink_to_fit();
 	this->zero_val = (T)0;
