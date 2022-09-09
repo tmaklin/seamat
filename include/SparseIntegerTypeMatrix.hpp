@@ -23,7 +23,8 @@
 namespace seamat {
 template <typename T> class SparseIntegerTypeMatrix : public Matrix<T> {
 private:
-    // Specialization of SparseIntegerTypeMatrix for integer types using BitMagic's sparse integer vectors
+    // Specialized sparse matrix for integer types using BitMagic's
+    // sparse integer vectors.
     //
     bm::sparse_vector<T, bm::bvector<>> vals;
     T zero_val;
@@ -32,13 +33,15 @@ public:
     SparseIntegerTypeMatrix() = default;
     ~SparseIntegerTypeMatrix() = default;
     // Parameter constructor
-    SparseIntegerTypeMatrix(size_t _rows, size_t _cols, const T& _initial);
+    SparseIntegerTypeMatrix(size_t _rows, size_t _cols, const T _zero_val);
+    // Initialize from a generic Matrix
+    SparseIntegerTypeMatrix(const Matrix<T> &_vals, const T _zero_val);
     // Initialize from a DenseMatrix
-    SparseIntegerTypeMatrix(const Matrix<T> &_vals, const T& _zero_val);
+    SparseIntegerTypeMatrix(const DenseMatrix<T> &_vals, const T _zero_val);
     // Initialize from a 2D vector
-    SparseIntegerTypeMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val);
+    SparseIntegerTypeMatrix(const std::vector<std::vector<T>> &rhs, const T _zero_val);
     // Copy constructor from contiguous 2D vector
-    SparseIntegerTypeMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val);
+    SparseIntegerTypeMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T _zero_val);
 
     // Access individual elements
     T& operator()(size_t row, size_t col) override;
@@ -63,53 +66,74 @@ public:
 
 // Parameter constructor
 template<typename T>
-SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(size_t _rows, size_t _cols, const T& _initial) {
-    // Initializes a dense SparseIntegerTypeMatrix; use
-    // SparseIntegerTypeMatrix<T>::remove_nonzeros to sparsify the matrix after
-    // filling it.
+SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(size_t _rows, size_t _cols, const T _zero_val) {
+    // Initializes an empty SparseIntegerTypeMatrix.
+    //
     this->resize_rows(_rows);
     this->resize_cols(_cols);
-
-    size_t n_elements = _rows*_cols;
-    this->vals.resize(n_elements);
+    this->zero_val = _zero_val;
+    this->vals.resize((size_t)(_rows*_cols));
 }
-    
-// Initialize from a DenseMatrix
+
+// Copy constructor from a generic Matrix
 template<typename T>
-SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const Matrix<T> &_vals, const T& _zero_val) {
-    // TODO: get the values in _vals as an array and initialize the SparseMatrix from that?
-    // According to the BitMagic sparsevector documentation this is the fastest way to initialize
-    // a sparsevector type (calling bm::sparse_vector::set is supposedly slow).
-    this->resize_rows(_vals.get_rows());
-    this->resize_cols(_vals.get_cols());
+SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const Matrix<T> &_vals, const T _zero_val) {
+    // Initializes a SparseMatrix from a generic Matrix _vals.
+    //
+    size_t _rows = _vals.get_rows();
+    size_t _cols = _vals.get_cols();
+
+    this->resize_rows(_rows);
+    this->resize_cols(_cols);
     this->zero_val = _zero_val;
 
-    size_t n_vals = this->rows*this->cols;
-    this->vals.resize((n_vals));
+    this->vals.resize((size_t)(_rows*_cols));
 
-    for (size_t i = 0; i < this->get_rows(); ++i) {
-	for (size_t j = 0; j < this->get_cols(); ++j) {
+    for (size_t i = 0; i < _rows; ++i) {
+	for (size_t j = 0; j < _cols; ++j) {
 	    if (!nearly_equal<T>(_vals(i, j), _zero_val)) {
-		this->vals.set(i*this->get_cols() + j, _vals(i, j));
+		this->vals.set(i*_cols + j, _vals(i, j));
 	    }
 	}
     }
 }
 
-// Initialize from a 2D vector
+// Copy constructor from a DenseMatrix
 template<typename T>
-SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val) {
-    this->resize_rows(rhs.size());
-    this->resize_cols(rhs.at(0).size());
+SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const DenseMatrix<T> &_vals, const T _zero_val) {
+    // Initializes a SparseMatrix from DenseMatrix _vals.
+    //
+    size_t _rows = _vals.get_rows();
+    size_t _cols = _vals.get_cols();
+
+    this->resize_rows(_rows);
+    this->resize_cols(_cols);
     this->zero_val = _zero_val;
 
-    size_t n_vals = this->rows*this->cols;
-    this->vals.resize(n_vals);
+    // Construct the bm::sparse_vector from _vals.mat's internal array
+    T* arr_start = &_vals.mat[0];
+    this->vals = bm::sparse_vector<T, bm::bvector<>>(arr_start);
+}
 
-    for (size_t i = 0; i < this->get_rows(); ++i) {
-	for (size_t j = 0; j < this->get_cols(); ++j) {
-	    if (!nearly_equal<T>(rhs[i][j], _zero_val)) {
-		this->vals.set(i*this->get_cols() + j, rhs[i][j]);
+// Copy constructor from 2D vector
+template<typename T>
+SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const std::vector<std::vector<T>> &_vals, const T _zero_val) {
+    // Initialize from a 2D vector
+    // NOTE: can be slow, use one of the other constructors if possible
+    //
+    size_t _rows = _vals.size();
+    size_t _cols = _vals.at(0).size();
+
+    this->resize_rows(_rows);
+    this->resize_cols(_cols);
+    this->zero_val = _zero_val;
+
+    // Construct the bm::sparse_vector from _vals's internal arrays
+    this->vals.resize((size_t)(_rows*_cols));
+    for (size_t i = 0; i < _rows; ++i) {
+	for (size_t j = 0; j < _cols; ++j) {
+	    if (!nearly_equal<T>(_vals(i, j), _zero_val)) {
+		this->vals.set(i*_cols + j, _vals[i][j]);
 	    }
 	}
     }
@@ -117,21 +141,16 @@ SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const std::vector<std::vecto
 
 // Copy constructor from contiguous 2D vector
 template <typename T>
-SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val) {
-    this->resize_rows(rhs.size());
-    this->resize_cols(rhs.at(0).size());
+SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const std::vector<T> &_vals, const size_t _rows, const size_t _cols, const T _zero_val) {
+    // Initializes a SparseMatrix from a contiguous vector _vals.
+    //
+    this->resize_rows(_rows);
+    this->resize_cols(_cols);
     this->zero_val = _zero_val;
 
-    size_t n_vals = this->rows*this->cols;
-    this->vals.resize(n_vals);
-
-    for (size_t i = 0; i < this->get_rows(); ++i) {
-	for (size_t j = 0; j < this->get_cols(); ++j) {
-	    if (!nearly_equal<T>(rhs[i][j], _zero_val)) {
-		this->vals.set(i*this->get_cols() + j, rhs[i][j]);
-	    }
-	}
-    }
+    // Construct the bm::sparse_vector from _vals's internal array
+    T* arr_start = &_vals[0];
+    this->vals = bm::sparse_vector<T, bm::bvector<>>(arr_start);
 }
 
 // Access individual elements
@@ -142,7 +161,7 @@ T& SparseIntegerTypeMatrix<T>::operator()(size_t row, size_t col) {
     return const_cast<T&>(out);
 }
 
-// Access individual elements
+// Access individual elements (const)
 template <typename T>
 const T& SparseIntegerTypeMatrix<T>::operator()(size_t row, size_t col) const {
     size_t address = row*this->get_cols() + col;
