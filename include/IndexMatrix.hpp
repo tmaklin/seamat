@@ -15,26 +15,24 @@
 #include <memory>
 
 #include "Matrix.hpp"
-#include "SparseIntegerTypeMatrix.hpp"
 #include "openmp_config.hpp"
 #include "math_util.hpp"
 
 namespace seamat {
-template <typename T, typename U> class IndexMatrix : public Matrix<T> {
+    //template <typename T, typename U> class IndexMatrix : public Matrix<T> {
+    template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix> class IndexMatrix : public Matrix<T> {
 private:
     // Dimensions of the `vals` member variable.
     //
     size_t n_rows_vals;
     size_t n_cols_vals;
 
-    bool own_vals = true;
-    bool own_indices = true;
     // Store the vals and indices as a pointer so they can be sparse or
     // dense as needed. Shared_ptr used here because multiple
     // IndexMatrices may share the same vals and/or indices.
     //
-    std::shared_ptr<Matrix<T>> vals;
-    std::shared_ptr<Matrix<U>> indices;
+    std::shared_ptr<ValuesMatrix<T>> vals;
+    std::shared_ptr<IndicesMatrix<U>> indices;
 
     // Helper for setting the dimensions in constructors
     void resize_self(const size_t _rows, const size_t _cols, const size_t _rows_vals, const size_t _cols_vals);
@@ -45,22 +43,10 @@ public:
     ~IndexMatrix() = default;
 
     // Copy constructor from Matrix _vals and Matrix _indices
-    IndexMatrix(const DenseMatrix<T> &_vals, const DenseMatrix<U> &_indices);
-    // Copy constructor from Matrix _vals and Matrix _indices
-    IndexMatrix(const DenseMatrix<T> &_vals, const SparseMatrix<U> &_indices);
-    // Copy constructor from Matrix _vals and Matrix _indices
-    IndexMatrix(const SparseMatrix<T> &_vals, const DenseMatrix<U> &_indices);
-    // Copy constructor from Matrix _vals and Matrix _indices
-    IndexMatrix(const SparseMatrix<T> &_vals, const SparseMatrix<U> &_indices);
+    IndexMatrix(const ValuesMatrix<T> &_vals, const IndicesMatrix<U> &_indices);
 
     // Move constructor from Matrix _vals and Matrix _indices
-    IndexMatrix(DenseMatrix<T> &&_vals, DenseMatrix<U> &&_indices);
-    // Move constructor from Matrix _vals and Matrix _indices
-    IndexMatrix(DenseMatrix<T> &&_vals, SparseMatrix<U> &&_indices);
-    // Move constructor from Matrix _vals and Matrix _indices
-    IndexMatrix(SparseMatrix<T> &&_vals, DenseMatrix<U> &&_indices);
-    // Move constructor from Matrix _vals and Matrix _indices
-    IndexMatrix(SparseMatrix<T> &&_vals, SparseMatrix<U> &&_indices);
+    IndexMatrix(ValuesMatrix<T> &&_vals, IndicesMatrix<U> &&_indices);
 
     // Copy constructor from Matrix _vals and contiguously stored matrix _indices
     IndexMatrix(const Matrix<T> &_vals, const std::vector<U> &_indices, const size_t _n_rows, const size_t _n_cols);
@@ -77,24 +63,24 @@ public:
 
     // Mathematical operators
     // Matrix-matrix in-place summation and subtraction
-    IndexMatrix<T, U>& operator+=(const Matrix<T>& rhs) override;
-    IndexMatrix<T, U>& operator-=(const Matrix<T>& rhs) override;
+	IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& operator+=(const Matrix<T>& rhs) override;
+    IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& operator-=(const Matrix<T>& rhs) override;
 
     // In-place right multiplication
-    IndexMatrix<T, U>& operator*=(const Matrix<T>& rhs) override;
+    IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& operator*=(const Matrix<T>& rhs) override;
     // In-place left multiplication
-    IndexMatrix<T, U>& operator%=(const Matrix<T>& rhs) override;
+    IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& operator%=(const Matrix<T>& rhs) override;
 
     // Matrix-scalar, in-place
-    IndexMatrix<T, U>& operator+=(const T& rhs) override;
-    IndexMatrix<T, U>& operator-=(const T& rhs) override;
-    IndexMatrix<T, U>& operator*=(const T& rhs) override;
-    IndexMatrix<T, U>& operator/=(const T& rhs) override;
+    IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& operator+=(const T& rhs) override;
+    IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& operator-=(const T& rhs) override;
+    IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& operator*=(const T& rhs) override;
+    IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& operator/=(const T& rhs) override;
 
 };
 
-template <typename T, typename U>
-void IndexMatrix<T, U>::resize_self(const size_t _rows, const size_t _cols, const size_t _rows_vals, const size_t _cols_vals) {
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+void IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::resize_self(const size_t _rows, const size_t _cols, const size_t _rows_vals, const size_t _cols_vals) {
     // Resizes the dimensions of both vals and indices (private)
     // Helper function for constructors
     //
@@ -105,15 +91,15 @@ void IndexMatrix<T, U>::resize_self(const size_t _rows, const size_t _cols, cons
 }
 
 // Access individual elements
-template <typename T, typename U>
-T& IndexMatrix<T, U>::operator()(size_t row, size_t col) {
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+T& IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator()(size_t row, size_t col) {
     size_t out_col = this->indices->operator()(row, col);
     return this->vals->operator()(row, out_col);
 }
 
 // Access individual elements (const)
-template <typename T, typename U>
-const T& IndexMatrix<T, U>::operator()(size_t row, size_t col) const {
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+const T& IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator()(size_t row, size_t col) const {
     size_t out_col = this->indices->operator()(row, col);
     return this->vals->operator()(row, out_col);
 }
@@ -122,121 +108,70 @@ const T& IndexMatrix<T, U>::operator()(size_t row, size_t col) const {
 // Constructor definitions
 //
 /// Default constructor
-    template <typename T, typename U>
-    IndexMatrix<T, U>::IndexMatrix() {
+    template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+    IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::IndexMatrix() {
 	// Default constructor initializes both vals and indices as an
 	// empty DenseMatrix.
 	//
 	this->resize_self(0, 0, 0, 0);
 
-	this->vals = std::make_shared<DenseMatrix<T>>(0, 0, (T)0);
-	this->indices = std::make_shared<DenseMatrix<U>>(0, 0, (U)0);
+	this->vals = std::make_shared<ValuesMatrix<T>>(0, 0, (T)0);
+	this->indices = std::make_shared<IndicesMatrix<U>>(0, 0, (U)0);
     }
 
-// Copy constructors (There's got to be a better way to do this?? but make_shared doesn't work for abstract type...)
+////
+// Copy constructors
+// (There's got to be a better way to do this than a separate constructor for every derived Matrix class??
+//  but make_shared doesn't work for abstract type and reset doesn't copy the object...)
+//
 /// Copy constructor from Matrix _vals and Matrix _indices
-    template<typename T, typename U>
-    IndexMatrix<T, U>::IndexMatrix(const DenseMatrix<T> &_vals, const DenseMatrix<U> &_indices) {
+    template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+    IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::IndexMatrix(const ValuesMatrix<T> &_vals, const IndicesMatrix<U> &_indices) {
 	this->resize_self(_indices.get_rows(), _indices.get_cols(), _vals.get_rows(), _vals.get_cols());
 
-	//this->vals.reset(const_cast<Matrix<T>*>(&_vals));
-	//this->indices.reset(const_cast<Matrix<U>*>(&_indices));
-	this->vals = std::make_shared<DenseMatrix<T>>(_vals);
-	this->indices = std::make_shared<DenseMatrix<U>>(_indices);
-   }
-/// Copy constructor from Matrix _vals and Matrix _indices
-    template<typename T, typename U>
-    IndexMatrix<T, U>::IndexMatrix(const DenseMatrix<T> &_vals, const SparseMatrix<U> &_indices) {
-	this->resize_self(_indices.get_rows(), _indices.get_cols(), _vals.get_rows(), _vals.get_cols());
-
-	//this->vals.reset(const_cast<Matrix<T>*>(&_vals));
-	//this->indices.reset(const_cast<Matrix<U>*>(&_indices));
-	this->vals = std::make_shared<DenseMatrix<T>>(_vals);
-	this->indices = std::make_shared<SparseMatrix<U>>(_indices);
-   }
-/// Copy constructor from Matrix _vals and Matrix _indices
-    template<typename T, typename U>
-    IndexMatrix<T, U>::IndexMatrix(const SparseMatrix<T> &_vals, const DenseMatrix<U> &_indices) {
-	this->resize_self(_indices.get_rows(), _indices.get_cols(), _vals.get_rows(), _vals.get_cols());
-
-	//this->vals.reset(const_cast<Matrix<T>*>(&_vals));
-	//this->indices.reset(const_cast<Matrix<U>*>(&_indices));
-	this->vals = std::make_shared<SparseMatrix<T>>(_vals);
-	this->indices = std::make_shared<DenseMatrix<U>>(_indices);
-   }
-/// Copy constructor from Matrix _vals and Matrix _indices
-    template<typename T, typename U>
-    IndexMatrix<T, U>::IndexMatrix(const SparseMatrix<T> &_vals, const SparseMatrix<U> &_indices) {
-	this->resize_self(_indices.get_rows(), _indices.get_cols(), _vals.get_rows(), _vals.get_cols());
-
-	//this->vals.reset(const_cast<Matrix<T>*>(&_vals));
-	//this->indices.reset(const_cast<Matrix<U>*>(&_indices));
-	this->vals = std::make_shared<SparseMatrix<T>>(_vals);
-	this->indices = std::make_shared<SparseMatrix<U>>(_indices);
+	this->vals = std::make_shared<ValuesMatrix<T>>(_vals);
+	this->indices = std::make_shared<IndicesMatrix<U>>(_indices);
    }
 
+////
 // Move constructors
 /// Move constructor from Matrix _vals and Matrix _indices
-    template<typename T, typename U>
-    IndexMatrix<T, U>::IndexMatrix(DenseMatrix<T> &&_vals, DenseMatrix<U> &&_indices) {
-	this->resize_self(_indices.get_rows(), _indices.get_cols(), _vals.get_rows(), _vals.get_cols());
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::IndexMatrix(ValuesMatrix<T> &&_vals, IndicesMatrix<U> &&_indices) {
+    this->resize_self(_indices.get_rows(), _indices.get_cols(), _vals.get_rows(), _vals.get_cols());
 
-	this->vals = std::make_shared<DenseMatrix<T>>(_vals);
-	this->indices = std::make_shared<DenseMatrix<U>>(_indices);
-    }
-/// Move constructor from Matrix _vals and Matrix _indices
-    template<typename T, typename U>
-    IndexMatrix<T, U>::IndexMatrix(DenseMatrix<T> &&_vals, SparseMatrix<U> &&_indices) {
-	this->resize_self(_indices.get_rows(), _indices.get_cols(), _vals.get_rows(), _vals.get_cols());
-
-	this->vals = std::make_shared<DenseMatrix<T>>(_vals);
-	this->indices = std::make_shared<SparseMatrix<U>>(_indices);
-    }
-/// Move constructor from Matrix _vals and Matrix _indices
-    template<typename T, typename U>
-    IndexMatrix<T, U>::IndexMatrix(SparseMatrix<T> &&_vals, DenseMatrix<U> &&_indices) {
-	this->resize_self(_indices.get_rows(), _indices.get_cols(), _vals.get_rows(), _vals.get_cols());
-
-	this->vals = std::make_shared<SparseMatrix<T>>(std::move(_vals));
-	this->indices = std::make_shared<DenseMatrix<U>>(std::move(_indices));
-    }
-/// Move constructor from Matrix _vals and Matrix _indices
-    template<typename T, typename U>
-    IndexMatrix<T, U>::IndexMatrix(SparseMatrix<T> &&_vals, SparseMatrix<U> &&_indices) {
-	this->resize_self(_indices.get_rows(), _indices.get_cols(), _vals.get_rows(), _vals.get_cols());
-
-	this->vals = std::make_shared<SparseMatrix<T>>(std::move(_vals));
-	this->indices = std::make_shared<SparseMatrix<U>>(std::move(_indices));
-    }
+    this->vals = std::make_shared<ValuesMatrix<T>>(_vals);
+    this->indices = std::make_shared<IndicesMatrix<U>>(_indices);
+}
 
 /// Copy constructor from Matrix _vals, contiguously stored matrix _indices
-    template <typename T, typename U>
-    IndexMatrix<T, U>::IndexMatrix(const Matrix<T> &_vals, const std::vector<U> &_indices, size_t _n_rows, size_t _n_cols) {
-	this->resize_self(_n_rows, _n_cols, _vals.get_rows(), _vals.get_cols());
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::IndexMatrix(const Matrix<T> &_vals, const std::vector<U> &_indices, size_t _n_rows, size_t _n_cols) {
+    this->resize_self(_n_rows, _n_cols, _vals.get_rows(), _vals.get_cols());
 
-	this->vals = std::make_shared<Matrix<T>>(_vals);
-	this->indices = std::make_shared<Matrix<U>>(_indices, _n_rows, _n_cols);
-    }
+    this->vals = std::make_shared<Matrix<T>>(_vals);
+    this->indices = std::make_shared<Matrix<U>>(_indices, _n_rows, _n_cols);
+}
 
 /// Copy constructor from contiguously stored matrix _vals, Matrix _indices
-    template <typename T, typename U>
-    IndexMatrix<T, U>::IndexMatrix(const std::vector<T> &_vals, const Matrix<U> &_indices, size_t _n_rows_vals, size_t _n_cols_vals) {
-	this->resize_self(_indices.get_rows(), _indices.get_cols(), _n_rows_vals, _n_cols_vals);
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::IndexMatrix(const std::vector<T> &_vals, const Matrix<U> &_indices, size_t _n_rows_vals, size_t _n_cols_vals) {
+    this->resize_self(_indices.get_rows(), _indices.get_cols(), _n_rows_vals, _n_cols_vals);
 
-	this->vals = std::make_shared(_vals, _n_rows_vals, _n_cols_vals);
-	this->indices = std::make_shared(_indices);
-    }
+    this->vals = std::make_shared(_vals, _n_rows_vals, _n_cols_vals);
+    this->indices = std::make_shared(_indices);
+}
 
 /// Copy constructor from contiguously stored matrices _vals, _indices
-    template <typename T, typename U>
-    IndexMatrix<T, U>::IndexMatrix(const std::vector<T> &_vals, const std::vector<U> &_indices,
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::IndexMatrix(const std::vector<T> &_vals, const std::vector<U> &_indices,
 				   const size_t _n_rows_vals, const size_t _n_cols_vals,
 				   const size_t _n_rows, const size_t _n_cols) {
-	this->resize_self(_n_rows, _n_cols, _n_rows_vals, _n_cols_vals);
+    this->resize_self(_n_rows, _n_cols, _n_rows_vals, _n_cols_vals);
 
-	this->vals = std::make_shared(_vals, _n_rows_vals, _n_cols_vals);
-	this->indices = std::make_shared(_indices, _n_rows, _n_cols);
-    }
+    this->vals = std::make_shared(_vals, _n_rows_vals, _n_cols_vals);
+    this->indices = std::make_shared(_indices, _n_rows, _n_cols);
+}
 //
 // End constructors
 //////
@@ -244,9 +179,9 @@ const T& IndexMatrix<T, U>::operator()(size_t row, size_t col) const {
 // TODO implement index matrix operators
 
 // In-place matrix-matrix addition
-template<typename T, typename U>
-IndexMatrix<T, U>& IndexMatrix<T, U>::operator+=(const Matrix<T>& rhs) {
-    // seamat::IndexMatrix<T, U>::operator+=
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator+=(const Matrix<T>& rhs) {
+    // seamat::IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator+=
     //
     // Add values from rhs to the calling matrix in-place.
     //
@@ -258,9 +193,9 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator+=(const Matrix<T>& rhs) {
 }
 
 // In-place matrix-matrix subtraction
-template<typename T, typename U>
-IndexMatrix<T, U>& IndexMatrix<T, U>::operator-=(const Matrix<T>& rhs) {
-    // seamat::IndexMatrix<T, U>::operator-=
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator-=(const Matrix<T>& rhs) {
+    // seamat::IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator-=
     //
     // Subtract values of rhs from the calling matrix in-place.
     //
@@ -273,9 +208,9 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator-=(const Matrix<T>& rhs) {
 }
 
 // In-place right multiplication
-template<typename T, typename U>
-IndexMatrix<T, U>& IndexMatrix<T, U>::operator*=(const Matrix<T>& rhs) {
-    // seamat::IndexMatrix<T, U>::operator*=
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator*=(const Matrix<T>& rhs) {
+    // seamat::IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator*=
     //
     // Matrix right-multiplication of the caller with rhs in-place.
     //
@@ -288,9 +223,9 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator*=(const Matrix<T>& rhs) {
 }
 
 // In-place left multiplication
-template<typename T, typename U>
-IndexMatrix<T, U>& IndexMatrix<T, U>::operator%=(const Matrix<T>& lhs) {
-    // seamat::IndexMatrix<T, U>::operator%=
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator%=(const Matrix<T>& lhs) {
+    // seamat::IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator%=
     //
     // Matrix left-multiplication of the caller with lhs in-place.
     //
@@ -303,9 +238,9 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator%=(const Matrix<T>& lhs) {
 }
 
 // In-place matrix-scalar addition
-template<typename T, typename U>
-IndexMatrix<T, U>& IndexMatrix<T, U>::operator+=(const T& scalar) {
-    // seamat::IndexMatrix<T, U>::operator+=
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator+=(const T& scalar) {
+    // seamat::IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator+=
     //
     // In-place addition of a scalar to caller.
     //
@@ -323,9 +258,9 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator+=(const T& scalar) {
 }
 
 // In-place matrix-scalar subtraction
-template<typename T, typename U>
-IndexMatrix<T, U>& IndexMatrix<T, U>::operator-=(const T& scalar) {
-    // seamat::IndexMatrix<T, U>::operator-=
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator-=(const T& scalar) {
+    // seamat::IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator-=
     //
     // In-place subtraction of a scalar from the caller.
     //
@@ -343,9 +278,9 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator-=(const T& scalar) {
 }
 
 // In-place matrix-scalar multiplication
-template<typename T, typename U>
-IndexMatrix<T, U>& IndexMatrix<T, U>::operator*=(const T& scalar) {
-    // seamat::IndexMatrix<T, U>::operator*=
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator*=(const T& scalar) {
+    // seamat::IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator*=
     //
     // In-place multiplication of the caller with a scalar.
     //
@@ -363,9 +298,9 @@ IndexMatrix<T, U>& IndexMatrix<T, U>::operator*=(const T& scalar) {
 }
 
 // In-place matrix-scalar division
-template<typename T, typename U>
-IndexMatrix<T, U>& IndexMatrix<T, U>::operator/=(const T& scalar) {
-    // seamat::IndexMatrix<T, U>::operator/=
+template <typename T, typename U, template <typename> class ValuesMatrix, template <typename> class IndicesMatrix>
+IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>& IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator/=(const T& scalar) {
+    // seamat::IndexMatrix<T, U, ValuesMatrix, IndicesMatrix>::operator/=
     //
     // In-place division of the caller with a scalar.
     //
