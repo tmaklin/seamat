@@ -50,11 +50,11 @@ public:
     // format internally to build the matrix and then convert back to CRS.
     //
     // Construct from another matrix object
-    SparseMatrix(const Matrix<T> &_vals, const T& _zero_val);
+    SparseMatrix(const Matrix<T> &_vals, const T& _zero_val = (T)0);
     // Construct from a 2D vector (vector of vectors)
-    SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val);
+    SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val = (T)0);
     // Construct from a contiguously stored 2D vector (vector with known dimensions)
-    SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val);
+    SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val = (T)0);
 
     // Access individual elements
     T& operator()(size_t row, size_t col) override;
