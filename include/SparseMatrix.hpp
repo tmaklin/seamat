@@ -18,7 +18,7 @@
 #include "math_util.hpp"
 
 namespace seamat {
-template <typename T> class SparseMatrix : public Matrix<T> {
+    template <typename T> class SparseMatrix : public Matrix<T> {
 private:
     // Sparse matrix implemented in the compressed row storage (CRS) format.
     // See link below for reference.
@@ -46,15 +46,15 @@ public:
     // Parameter constructor, initialize an empty SparseMatrix
     SparseMatrix(const size_t _rows, const size_t _cols, const T _zero_val);
 
-    // Constructors from existing objects, these use the coordinate list (COO)
+    // (Copy) constructors from existing objects, these use the coordinate list (COO)
     // format internally to build the matrix and then convert back to CRS.
     //
     // Construct from another matrix object
-    SparseMatrix(const Matrix<T> &_vals, const T& _zero_val = (T)0);
+    SparseMatrix(const Matrix<T> &_vals, const T _zero_val = (T)0);
     // Construct from a 2D vector (vector of vectors)
-    SparseMatrix(const std::vector<std::vector<T>> &rhs, const T& _zero_val = (T)0);
+    SparseMatrix(const std::vector<std::vector<T>> &rhs, const T _zero_val = (T)0);
     // Construct from a contiguously stored 2D vector (vector with known dimensions)
-    SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T& _zero_val = (T)0);
+    SparseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols, const T _zero_val = (T)0);
 
     // Access individual elements
     T& operator()(size_t row, size_t col) override;
@@ -156,7 +156,7 @@ SparseMatrix<T>::SparseMatrix(const size_t _rows, const size_t _cols, const T _z
 
 // Construct from another matrix object
 template<typename T>
-SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
+SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T _zero_val) {
     // Initializes a SparseMatrix containing the values in the input Matrix
     // Input:
     //   _vals: an arbitrary Matrix<T> object that supports operator() for accessing values.
@@ -183,7 +183,7 @@ SparseMatrix<T>::SparseMatrix(const Matrix<T> &_vals, const T& _zero_val) {
 
 // Construct from a 2D vector (vector of vectors)
 template<typename T>
-SparseMatrix<T>::SparseMatrix(const std::vector<std::vector<T>> &_vals, const T& _zero_val) {
+SparseMatrix<T>::SparseMatrix(const std::vector<std::vector<T>> &_vals, const T _zero_val) {
     // Initializes a SparseMatrix containing the values in the input 2D vector
     // Input:
     //   _vals: a 2D vector containing the values (first dimension rows, second cols).
@@ -212,7 +212,7 @@ SparseMatrix<T>::SparseMatrix(const std::vector<std::vector<T>> &_vals, const T&
 
 // Construct from a contiguously stored 2D vector (vector with known dimensions)
 template <typename T>
-SparseMatrix<T>::SparseMatrix(const std::vector<T> &_vals, const size_t _rows, const size_t _cols, const T& _zero_val) {
+SparseMatrix<T>::SparseMatrix(const std::vector<T> &_vals, const size_t _rows, const size_t _cols, const T _zero_val) {
     // Initializes a SparseMatrix containing the values in the input vector
     // Input:
     //   _vals: a _rows*_cols vector containing the values.
