@@ -77,7 +77,7 @@ public:
     ////
     // Mathematical operators
     // Matrix-matrix summation and subtraction
-    DenseMatrix<T>& operator+(const Matrix<T>& rhs) const;
+    DenseMatrix<T> operator+(const Matrix<T>& rhs) const;
     DenseMatrix<T>& operator-(const Matrix<T>& rhs) const;
 
     // Matrix-matrix right multiplication
@@ -128,7 +128,7 @@ public:
 };
 // Matrix-matrix addition
 template<typename T>
-DenseMatrix<T>& Matrix<T>::operator+(const Matrix<T>& rhs) const {
+DenseMatrix<T> Matrix<T>::operator+(const Matrix<T>& rhs) const {
     // seamat::Matrix<T>::operator+
     //
     // Creates a new DenseMatrix<T> that contains the result of
