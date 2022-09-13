@@ -28,6 +28,14 @@ namespace seamat {
 
 	return min_a <= b && max_a >= b;
     }
+
+    template<class T, class U>
+    bool compare_shared_ptr(const std::shared_ptr<T> &a,const std::shared_ptr<U> &b) {
+	// From https://stackoverflow.com/questions/33650944/compare-shared-ptr-object-equality
+	if(a == b) return true;
+	if(a && b) return *a == *b;
+	return false;
+    }
 }
 
 #endif
