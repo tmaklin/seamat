@@ -78,7 +78,7 @@ SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(size_t _rows, size_t _cols, 
 // Copy constructor from a generic Matrix
 template<typename T>
 SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const Matrix<T> &_vals, const T _zero_val) {
-    // Initializes a SparseMatrix from a generic Matrix _vals.
+    // Initializes a SparseIntegerTypeMatrix from a generic Matrix _vals.
     //
     size_t _rows = _vals.get_rows();
     size_t _cols = _vals.get_cols();
@@ -111,8 +111,8 @@ SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const DenseMatrix<T> &_vals,
     this->zero_val = _zero_val;
 
     // Construct the bm::sparse_vector from _vals.mat's internal array
-    T* arr_start = &_vals.mat[0];
-    this->vals = bm::sparse_vector<T, bm::bvector<>>(arr_start);
+    T* arr_start = const_cast<T*>(&_vals.mat[0]);
+    this->vals.import(arr_start, (size_t)(_rows*_cols));
 }
 
 // Copy constructor from 2D vector
@@ -132,7 +132,7 @@ SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const std::vector<std::vecto
     this->vals.resize((size_t)(_rows*_cols));
     for (size_t i = 0; i < _rows; ++i) {
 	for (size_t j = 0; j < _cols; ++j) {
-	    if (!nearly_equal<T>(_vals(i, j), _zero_val)) {
+	    if (!nearly_equal<T>(_vals[i][j], _zero_val)) {
 		this->vals.set(i*_cols + j, _vals[i][j]);
 	    }
 	}
@@ -149,8 +149,8 @@ SparseIntegerTypeMatrix<T>::SparseIntegerTypeMatrix(const std::vector<T> &_vals,
     this->zero_val = _zero_val;
 
     // Construct the bm::sparse_vector from _vals's internal array
-    T* arr_start = &_vals[0];
-    this->vals = bm::sparse_vector<T, bm::bvector<>>(arr_start);
+    T* arr_start = const_cast<T*>(&_vals[0]);
+    this->vals.import(arr_start, (size_t)(_rows*_cols));
 }
 
 // Access individual elements
