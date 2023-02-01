@@ -9,13 +9,81 @@
 //
 #ifndef SEAMAT_DENSE_MATRIX_CPP
 #define SEAMAT_DENSE_MATRIX_CPP
-#include "Matrix.hpp"
 
 #include <cmath>
 
+#include "Matrix.hpp"
 #include "openmp_config.hpp"
 
 namespace seamat {
+template <typename T> class DenseMatrix : public Matrix<T> {
+private:
+    std::vector<T> mat;
+
+public:
+    DenseMatrix() = default;
+    ~DenseMatrix() = default;
+    // Parameter constructor
+    DenseMatrix(size_t _rows, size_t _cols, const T& _initial);
+    // Copy constructor from contiguous 2D vector
+    DenseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols);
+    // Copy constructor from 2D vector
+    DenseMatrix(const std::vector<std::vector<T>> &rhs);
+    // Copy constructor from another matrix
+    DenseMatrix(const Matrix<T> &rhs);
+    // Copy constructor
+    DenseMatrix(const DenseMatrix<T>& rhs);
+    // Move constructor
+    DenseMatrix(DenseMatrix<T>&& rhs);
+
+    // Assignment operators
+    DenseMatrix<T>& operator=(const Matrix<T>& rhs);
+    // Copy assignment operator
+    DenseMatrix<T>& operator=(const DenseMatrix<T>& rhs);
+
+    // Move assignment operator
+    DenseMatrix<T>& operator=(DenseMatrix<T>&& rhs);
+
+    // Resize a matrix
+    void resize(const size_t new_rows, const size_t new_cols, const T initial);
+
+    // Access individual elements
+    T& operator()(size_t row, size_t col) override;
+    const T& operator()(size_t row, size_t col) const override;
+
+    // Mathematical operators
+    // Matrix-matrix in-place summation and subtraction
+    DenseMatrix<T>& operator+=(const Matrix<T>& rhs) override;
+    DenseMatrix<T>& operator-=(const Matrix<T>& rhs) override;
+
+    // In-place right multiplication
+    DenseMatrix<T>& operator*=(const Matrix<T>& rhs) override;
+    // In-place left multiplication
+    DenseMatrix<T>& operator%=(const Matrix<T>& rhs) override;
+
+    // Matrix-scalar, in-place
+    DenseMatrix<T>& operator+=(const T& rhs);
+    DenseMatrix<T>& operator-=(const T& rhs);
+    DenseMatrix<T>& operator*=(const T& rhs);
+    DenseMatrix<T>& operator/=(const T& rhs);
+
+    // Fill a matrix with the sum of two matrices in-place
+    template <typename V, typename U>
+    void sum_fill(const Matrix<V>& rhs1, const Matrix<U>& rhs2);
+
+    void add_row(const std::vector<T> &new_row) {
+#if defined(SEAMAT_CHECK_BOUNDS) && (SEAMAT_CHECK_BOUNDS) == 1
+        if (this->rows != new_row.size()) {
+	    throw std::runtime_error("New row has fewer values than matrx has columns.");
+	}
+#endif
+        for (size_t i = 0; i < new_row.size(); ++i) {
+	  this->mat.emplace_back(new_row[i]);
+	}
+	this->resize_rows(this->get_rows() + 1);
+    }
+};
+
 // Parameter Constructor
 template<typename T>
 DenseMatrix<T>::DenseMatrix(size_t _rows, size_t _cols, const T& _initial) {
@@ -27,7 +95,7 @@ DenseMatrix<T>::DenseMatrix(size_t _rows, size_t _cols, const T& _initial) {
 // Copy constructor from contiguous 2D vector
 template <typename T>
 DenseMatrix<T>::DenseMatrix(const std::vector<T> &rhs, const size_t _rows, const size_t _cols) {
-    mat = rhs;
+    mat = std::move(rhs);
     this->resize_rows(_rows);
     this->resize_cols(_cols);
 }
@@ -59,6 +127,27 @@ DenseMatrix<T>::DenseMatrix(const Matrix<T> &rhs) {
 	}
     }
 }
+// Copy constructor
+template<typename T>
+DenseMatrix<T>::DenseMatrix(const DenseMatrix<T>& rhs) {
+    size_t new_rows = rhs.get_rows();
+    size_t new_cols = rhs.get_cols();
+
+    this->mat = rhs.mat;
+    this->resize_rows(new_rows);
+    this->resize_cols(new_cols);
+}
+
+// Move constructor
+template<typename T>
+DenseMatrix<T>::DenseMatrix(DenseMatrix<T>&& rhs) {
+    size_t new_rows = rhs.get_rows();
+    size_t new_cols = rhs.get_cols();
+
+    this->mat = std::move(rhs.mat);
+    this->resize_rows(new_rows);
+    this->resize_cols(new_cols);
+}
 
 // Assignment Operator
 template<typename T>
@@ -68,15 +157,49 @@ DenseMatrix<T>& DenseMatrix<T>::operator=(const Matrix<T>& rhs) {
 
     size_t new_rows = rhs.get_rows();
     size_t new_cols = rhs.get_cols();
-    if (new_rows != this->get_rows() || new_cols != this->get_cols()) {
-	resize(new_rows, new_cols, (T)0);
-    }
+
+    this->mat = std::vector<T>((size_t)(new_rows*new_cols));
+    this->resize_rows(new_rows);
+    this->resize_cols(new_cols);
+
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < new_rows; i++) {
 	for (size_t j = 0; j < new_cols; j++) {
 	    this->operator()(i, j) = rhs(i, j);
 	}
     }
+    return *this;
+}
+
+// Copy assignment operator
+template<typename T>
+DenseMatrix<T>& DenseMatrix<T>::operator=(const DenseMatrix<T>& rhs) {
+    if (&rhs == this)
+	return *this;
+
+    size_t new_rows = rhs.get_rows();
+    size_t new_cols = rhs.get_cols();
+
+    this->mat = rhs.mat;
+    this->resize_rows(new_rows);
+    this->resize_cols(new_cols);
+
+    return *this;
+}
+
+// Move assignment operator
+template<typename T>
+DenseMatrix<T>& DenseMatrix<T>::operator=(DenseMatrix<T>&& rhs) {
+    if (&rhs == this)
+	return *this;
+
+    size_t new_rows = rhs.get_rows();
+    size_t new_cols = rhs.get_cols();
+
+    this->mat = std::move(rhs.mat);
+    this->resize_rows(new_rows);
+    this->resize_cols(new_cols);
+
     return *this;
 }
 

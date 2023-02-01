@@ -3,10 +3,10 @@ project(seamat)
 
 if (CMAKE_VERSION VERSION_LESS "3.1")
   if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")
   endif ()
 else ()
-  set (CMAKE_CXX_STANDARD 11)
+  set (CMAKE_CXX_STANDARD 17)
   set (CMAKE_CXX_STANDARD_REQUIRED ON)
 endif ()
 
@@ -50,6 +50,7 @@ if (DEFINED CMAKE_BITMAGIC_HEADERS)
 else()
   set(CMAKE_BITMAGIC_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/external/BitMagic-7.12.3/src)
 endif()
+include_directories(${CMAKE_BITMAGIC_HEADERS})
 
 ## Download googletest if building tests
 if(CMAKE_BUILD_TESTS)
@@ -84,6 +85,7 @@ if(CMAKE_BUILD_TESTS)
   add_executable(runTests
     ${CMAKE_CURRENT_SOURCE_DIR}/test/src/DenseMatrix_unittest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/src/SparseMatrix_unittest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/src/SparseIntegerTypeMatrix_unittest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/src/IndexMatrix_unittest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/src/Matrix_unittest.cpp)
   add_test(runTests runTests)
