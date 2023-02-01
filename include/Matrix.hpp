@@ -233,6 +233,54 @@ DenseMatrix<T> Matrix<T>::operator*(const Matrix<T>& rhs) const {
     return result;
 }
 
+
+// Strassen's algorithm, TODO implement submatrix function and test if this actually works
+// template<typename T>
+// DenseMatrix<T> Matrix<T>::operator*(const Matrix<T>& rhs) const {
+//     DenseMatrix<T> result(this->get_rows(), rhs.get_cols(), (T)0);
+
+//     // Check if the matrices are of a size that Strassen's algorithm can be applied to
+//     if (this->get_cols() == this->get_rows() && this->get_cols() % 2 == 0) {
+//         // Create the seven submatrices that are used in Strassen's algorithm
+//         DenseMatrix<T> A11 = this->submatrix(0, 0, this->get_rows()/2, this->get_cols()/2);
+//         DenseMatrix<T> A12 = this->submatrix(0, this->get_cols()/2, this->get_rows()/2, this->get_cols()/2);
+//         DenseMatrix<T> A21 = this->submatrix(this->get_rows()/2, 0, this->get_rows()/2, this->get_cols()/2);
+//         DenseMatrix<T> A22 = this->submatrix(this->get_rows()/2, this->get_cols()/2, this->get_rows()/2, this->get_cols()/2);
+
+//         DenseMatrix<T> B11 = rhs.submatrix(0, 0, this->get_rows()/2, this->get_cols()/2);
+//         DenseMatrix<T> B12 = rhs.submatrix(0, this->get_cols()/2, this->get_rows()/2, this->get_cols()/2);
+//         DenseMatrix<T> B21 = rhs.submatrix(this->get_rows()/2, 0, this->get_rows()/2, this->get_cols()/2);
+//         DenseMatrix<T> B22 = rhs.submatrix(this->get_rows()/2, this->get_cols()/2, this->get_rows()/2, this->get_cols()/2);
+
+//         // Compute the seven products used in Strassen's algorithm
+//         DenseMatrix<T> P1 = (A11 + A22) * (B11 + B22);
+//         DenseMatrix<T> P2 = (A21 + A22) * B11;
+//         DenseMatrix<T> P3 = A11 * (B12 - B22);
+//         DenseMatrix<T> P4 = A22 * (B21 - B11);
+//         DenseMatrix<T> P5 = (A11 + A12) * B22;
+//         DenseMatrix<T> P6 = (A21 - A11) * (B11 + B12);
+//         DenseMatrix<T> P7 = (A12 - A22) * (B21 + B22);
+
+//         // Compute the elements of the result matrix using the products computed above
+//         result.submatrix(0, 0, this->get_rows()/2, this->get_cols()/2) = P1 + P4 - P5 + P7;
+//         result.submatrix(0, this->get_cols()/2, this->get_rows()/2, this->get_cols()/2) = P3 + P5;
+//         result.submatrix(this->get_rows()/2, 0, this->get_rows()/2, this->get_cols()/2) = P2 + P4;
+//         result.submatrix(this->get_rows()/2, this->get_cols()/2, this->get_rows()/2, this->get_cols()/2) = P1 + P3 - P2 + P6;
+//     } else {
+//         // If the matrices are not of a size that Strassen's algorithm can be applied to,
+//         // use the naive method of matrix multiplication
+//         for (size_t i = 0; i < this->get_rows(); ++i) {
+// 	    for (size_t j = 0; j < this->get_cols(); ++j) {
+// 	        for (size_t k = 0; k < rhs.get_cols(); k++) {
+// 		    result(i, k) += this->operator()(i, j) * rhs(j, k);
+// 		}
+// 	    }
+//         }
+//     }
+
+//     return result;
+// }
+
 // Matrix-matrix left multiplication
 template<typename T>
 DenseMatrix<T> Matrix<T>::operator%(const Matrix<T>& lhs) const {
