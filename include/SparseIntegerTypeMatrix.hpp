@@ -14,7 +14,7 @@
 #include <stdexcept>
 #include <numeric>
 
-#include "bm.h"
+#include "bm64.h"
 #include "bmsparsevec.h"
 
 #include "Matrix.hpp"

@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "bm.h"
+#include "bm64.h"
 #include "bmsparsevec.h"
 
 // Basic matrix structure and operations
