@@ -42,6 +42,9 @@ if (OPENMP_FOUND)
 else()
   set(SEAMAT_OPENMP_SUPPORT 0)
 endif()
+### Configure openmp support
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config/seamat_openmp_config.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/include/seamat_openmp_config.hpp @ONLY)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 ## BitMagic - supplied with the project
 ## BitMagic

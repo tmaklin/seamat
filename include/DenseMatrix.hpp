@@ -13,7 +13,7 @@
 #include <cmath>
 
 #include "Matrix.hpp"
-#include "openmp_config.hpp"
+#include "seamat_openmp_config.hpp"
 
 namespace seamat {
 template <typename T> class DenseMatrix : public Matrix<T> {

@@ -14,7 +14,7 @@
 #include <stdexcept>
 
 #include "Matrix.hpp"
-#include "openmp_config.hpp"
+#include "seamat_openmp_config.hpp"
 #include "math_util.hpp"
 
 namespace seamat {
