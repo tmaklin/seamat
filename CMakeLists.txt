@@ -1,5 +1,6 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.11)
 project(seamat)
+include(FetchContent)
 
 if (CMAKE_VERSION VERSION_LESS "3.1")
   if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -42,6 +43,9 @@ if (OPENMP_FOUND)
 else()
   set(SEAMAT_OPENMP_SUPPORT 0)
 endif()
+### Configure openmp support
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/seamat_openmp_config.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/include/seamat_openmp_config.hpp @ONLY)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 ## BitMagic - supplied with the project
 ## BitMagic
@@ -59,41 +63,38 @@ if(CMAKE_BUILD_TESTS)
   if (DEFINED CMAKE_GOOGLETEST_HEADERS)
     message(STATUS "googletest headers provided in: ${CMAKE_GOOGLETEST_HEADERS}")
   else()
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists-googletest.txt.in ${CMAKE_CURRENT_BINARY_DIR}/external/googletest-download/CMakeLists.txt)
-    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-      RESULT_VARIABLE result
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/external/googletest-download )
-    if(result)
-      message(FATAL_ERROR "CMake step for googletest failed: ${result}")
-    endif()
-    execute_process(COMMAND ${CMAKE_COMMAND} --build .
-      RESULT_VARIABLE result
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/external/googletest-download )
-    if(result)
-      message(FATAL_ERROR "Build step for googletest failed: ${result}")
-    endif()
-    set(CMAKE_GOOGLETEST_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/external/googletest/googletest/include)
-    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/external/googletest
-                     ${CMAKE_CURRENT_BINARY_DIR}/external/googletest/build)
-  endif()
-  set_target_properties(gmock PROPERTIES EXCLUDE_FROM_ALL 1)
-  set_target_properties(gmock_main PROPERTIES EXCLUDE_FROM_ALL 1)
-  include_directories("${CMAKE_GOOGLETEST_HEADERS}")
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test/include ${CMAKE_CURRENT_SOURCE_DIR}/include)
-  enable_testing()
+    FetchContent_Declare(googletest
+      GIT_REPOSITORY    https://github.com/google/googletest.git
+      GIT_TAG           release-1.11.0
+      PREFIX            "external"
+      SOURCE_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/external/googletest"
+      BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/external/googletest"
+      BUILD_IN_SOURCE   0
+      CMAKE_ARGS      -D CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+		      -D "CMAKE_C_FLAGS=${CMAKE_C_FLAGS}"
+		      -D "CMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}"
+		      -D "CMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+		      -D "CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+    INSTALL_COMMAND   ""
+    )
+    FetchContent_MakeAvailable(googletest)
+    set(CMAKE_GOOGLETEST_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/external/googletest")
+   endif()
+   include_directories(${CMAKE_GOOGLETEST_HEADERS})
+   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test/include ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-  add_executable(runTests
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/src/DenseMatrix_unittest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/src/SparseMatrix_unittest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/src/SparseIntegerTypeMatrix_unittest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/src/IndexMatrix_unittest.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/src/Matrix_unittest.cpp)
-  add_test(runTests runTests)
+   enable_testing()
+   add_executable(runTests
+     ${CMAKE_CURRENT_SOURCE_DIR}/test/src/DenseMatrix_unittest.cpp
+     ${CMAKE_CURRENT_SOURCE_DIR}/test/src/SparseMatrix_unittest.cpp
+     ${CMAKE_CURRENT_SOURCE_DIR}/test/src/SparseIntegerTypeMatrix_unittest.cpp
+     ${CMAKE_CURRENT_SOURCE_DIR}/test/src/IndexMatrix_unittest.cpp
+     ${CMAKE_CURRENT_SOURCE_DIR}/test/src/Matrix_unittest.cpp)
+   add_test(runTests runTests)
 
-  ## Link tests
-  target_link_libraries(runTests gtest gtest_main)
-  if (OPENMP_FOUND)
-    target_link_libraries(runTests OpenMP::OpenMP_CXX)
-  endif()
+   ## Link tests
+   target_link_libraries(runTests gtest gtest_main)
+   if (OPENMP_FOUND)
+     target_link_libraries(runTests OpenMP::OpenMP_CXX)
+   endif()
 endif()
-
