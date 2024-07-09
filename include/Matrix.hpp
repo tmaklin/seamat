@@ -53,6 +53,9 @@ public:
     virtual T& operator()(size_t row, size_t col) =0;
     virtual const T& operator()(size_t row, size_t col) const =0;
 
+    // Getter for mat
+    virtual const std::vector<T>& get_data() const =0;
+
     // Mathematical operators
     // Matrix-matrix in-place summation and subtraction
     virtual Matrix<T>& operator+=(const Matrix<T>& rhs) =0;
