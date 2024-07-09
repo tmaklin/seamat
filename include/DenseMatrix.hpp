@@ -82,6 +82,9 @@ public:
 	}
 	this->resize_rows(this->get_rows() + 1);
     }
+
+    // Getter for mat
+    const std::vector<T>& get_data() const;
 };
 
 // Parameter Constructor
@@ -414,6 +417,13 @@ void DenseMatrix<T>::sum_fill(const Matrix<V>& rhs1, const Matrix<U>& rhs2) {
 	}
     }
 }
+
+// Getter for mat
+template<typename T>
+const std::vector<T>& DenseMatrix<T>::get_data() const {
+    return mat;
+}
+
 }
 
 #endif
