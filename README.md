@@ -1,6 +1,7 @@
 # seamat - c++ matrix library using templates and OpenMP parallelization
 
-# Work In Progress
+## Archived on 6 January 2026
+This was an internal library for [mSWEEP](https://github.com/PROBIC/mSWEEP) that is no longer maintained. Considering using a different matrix algebra library.
 
 ## License
 The source code from this project is subject to the terms of the
